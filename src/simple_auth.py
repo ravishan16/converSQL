@@ -37,7 +37,7 @@ def get_current_url() -> str:
             headers = st.context.headers
             if 'host' in headers:
                 host = headers['host']
-                protocol = 'https' if '.streamlit.app' in host or '.repl.co' in host else 'http'
+                protocol = 'https' if '.streamlit.app' in host or '.repl.co' in host or '.replit.dev' in host else 'http'
                 return f'{protocol}://{host}'
     except:
         pass
