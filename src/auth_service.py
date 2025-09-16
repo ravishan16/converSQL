@@ -73,8 +73,15 @@ class AuthService:
             if not redirect_to:
                 redirect_to = st.query_params.get('redirect')
                 if not redirect_to:
-                    # Use Streamlit's current URL
-                    redirect_to = st.context.headers.get('referer') or st.context.headers.get('origin')
+                    # Get the Replit domain from environment for proper redirect
+                    replit_domain = os.getenv('REPLIT_DEV_DOMAIN')
+                    if replit_domain:
+                        redirect_to = f"https://{replit_domain}"
+                    else:
+                        # Fallback to Streamlit's current URL
+                        redirect_to = st.context.headers.get('referer') or st.context.headers.get('origin')
+                        if not redirect_to:
+                            redirect_to = 'http://localhost:5000'
             
             response = self.supabase.auth.sign_in_with_oauth({
                 "provider": "google",
