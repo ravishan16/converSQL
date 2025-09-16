@@ -1,9 +1,9 @@
 [general]
-email = ""
+email = "ravishankar.sivasubramaniam@gmail.com"
 
 [server]
 headless = true
-enableCORS = false
+enableCORS = true
 port = 8501
 
 [theme]
