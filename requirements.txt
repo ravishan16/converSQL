@@ -13,9 +13,8 @@ boto3>=1.34.0
 # AI/ML providers
 anthropic>=0.40.0
 
-# Authentication (for Supabase integration)
-supabase>=2.0.0
-streamlit-authenticator>=0.3.0
+# Authentication (Google OAuth)
+requests>=2.31.0
 
 # Testing
 pytest>=7.4.0

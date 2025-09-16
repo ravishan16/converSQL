@@ -22,8 +22,8 @@ from src.core import (
 )
 
 # Import authentication
-from src.auth_components import auth_wrapper
-from src.auth_service import get_auth_service
+from src.simple_auth_components import simple_auth_wrapper
+from src.simple_auth import get_auth_service
 
 # Configure page with professional styling
 st.set_page_config(
@@ -139,8 +139,8 @@ def display_results(result_df: pd.DataFrame, title: str, execution_time: float =
         # Use full width for the dataframe with responsive height
         height = min(600, max(200, len(result_df) * 35 + 50))  # Dynamic height based on rows
         st.dataframe(
-            result_df, 
-            use_container_width=True,
+            result_df,
+            width="stretch",
             height=height
         )
         
@@ -148,31 +148,49 @@ def display_results(result_df: pd.DataFrame, title: str, execution_time: float =
         st.warning("⚠️ No results found")
 
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def load_parquet_files():
+    """Load and cache parquet files."""
+    return scan_parquet_files()
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def load_schema_context(_parquet_files):
+    """Load and cache schema context."""
+    return get_table_schemas(_parquet_files)
+
+@st.cache_resource(ttl=3600)  # Cache for 1 hour
+def load_ai_client():
+    """Load and cache AI client."""
+    return initialize_ai_client()
+
 def initialize_app_data():
-    """Initialize application data and AI services on first run."""
-    # Initialize session state for non-data items
+    """Initialize application data and AI services efficiently."""
+    # Initialize session state for non-data items only if missing
     if 'generated_sql' not in st.session_state:
         st.session_state.generated_sql = ""
     if 'bedrock_error' not in st.session_state:
         st.session_state.bedrock_error = ""
-    
-    # Initialize data-related session state
-    if 'app_initialized' not in st.session_state:
-        st.session_state.app_initialized = False
-    
-    # Load data and initialize services only once
-    if not st.session_state.app_initialized:
-        with st.spinner("🔄 Initializing application and loading data..."):
-            # Load data files
-            st.session_state.parquet_files = scan_parquet_files()
-            st.session_state.schema_context = get_table_schemas(st.session_state.parquet_files)
-            
-            # Initialize AI services
-            st.session_state.ai_client, st.session_state.ai_provider = initialize_ai_client()
-            st.session_state.ai_available = st.session_state.ai_client is not None
-            
-            # Mark as initialized
-            st.session_state.app_initialized = True
+    if 'show_edit_sql' not in st.session_state:
+        st.session_state.show_edit_sql = False
+
+    # Check if we need to initialize data (avoid reinitializing on every rerun)
+    if 'app_initialized' not in st.session_state or not st.session_state.app_initialized:
+        # Show spinner only if we're actually loading data
+        if 'parquet_files' not in st.session_state:
+            with st.spinner("🔄 Loading data files..."):
+                st.session_state.parquet_files = load_parquet_files()
+
+        if 'schema_context' not in st.session_state:
+            with st.spinner("🔄 Building schema context..."):
+                st.session_state.schema_context = load_schema_context(st.session_state.parquet_files)
+
+        if 'ai_client' not in st.session_state or 'ai_provider' not in st.session_state:
+            with st.spinner("🔄 Initializing AI services..."):
+                st.session_state.ai_client, st.session_state.ai_provider = load_ai_client()
+                st.session_state.ai_available = st.session_state.ai_client is not None
+
+        # Mark as initialized only after all components are loaded
+        st.session_state.app_initialized = True
 
 
 def main():
@@ -242,16 +260,48 @@ def main():
             </div>
             """, unsafe_allow_html=True)
         
-        # Professional configuration status
+        # Professional configuration status with debug info
         if DEMO_MODE:
             st.markdown("""
-            <div style='background-color: #cce5ff; border: 1px solid #b3d7ff; 
+            <div style='background-color: #cce5ff; border: 1px solid #b3d7ff;
                         border-radius: 6px; padding: 0.5rem; margin: 0.5rem 0;'>
                 <div style='color: #004085; font-size: 0.9rem; font-weight: 500;'>
                     🧪 Demo Mode Active
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            # Show detailed debug information in demo mode
+            auth = get_auth_service()
+
+            with st.expander("🔍 Auth Debug Info", expanded=False):
+                st.markdown("**Authentication Status:**")
+                st.markdown(f"- **Auth Enabled**: {auth.is_enabled()}")
+                st.markdown(f"- **Is Authenticated**: {auth.is_authenticated()}")
+                st.markdown(f"- **Demo Mode**: {DEMO_MODE}")
+
+                # Show current query params
+                query_params = dict(st.query_params)
+                if query_params:
+                    st.markdown("**Current URL Parameters:**")
+                    for key, value in query_params.items():
+                        st.markdown(f"- **{key}**: {str(value)[:100]}")
+                else:
+                    st.markdown("**Current URL Parameters**: None")
+
+                # Show user session info if authenticated
+                if 'user' in st.session_state:
+                    user = st.session_state.user
+                    st.markdown("**User Session:**")
+                    st.markdown(f"- **Email**: {user.get('email', 'N/A')}")
+                    st.markdown(f"- **Name**: {user.get('name', 'N/A')}")
+                    st.markdown(f"- **Auth Time**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(user.get('authenticated_at', 0)))}")
+
+                # Configuration status
+                st.markdown("**Configuration:**")
+                st.markdown(f"- **Google Client ID**: {'✅ Set' if os.getenv('GOOGLE_CLIENT_ID') else '❌ Missing'}")
+                st.markdown(f"- **Google Client Secret**: {'✅ Set' if os.getenv('GOOGLE_CLIENT_SECRET') else '❌ Missing'}")
+                st.markdown(f"- **Enable Auth**: {os.getenv('ENABLE_AUTH', 'true')}")
         
         st.markdown("<div style='margin: 1rem 0; border-bottom: 1px solid #e9ecef;'></div>", unsafe_allow_html=True)
         
@@ -346,7 +396,7 @@ def main():
         # Professional question input with better styling
         st.markdown("<div style='margin: 1.5rem 0 0.5rem 0;'><label style='font-weight: 500; color: #495057;'>💭 Your Question:</label></div>", unsafe_allow_html=True)
         user_question = st.text_area(
-            "",
+            "Your Question",
             value=st.session_state.get('user_question', ''),
             placeholder="e.g., What are the top 10 states by loan volume and their average interest rates?",
             help="Ask your question in natural language - be specific for better results",
@@ -361,9 +411,9 @@ def main():
         is_ai_ready = ai_available and user_question.strip()
         
         generate_button = st.button(
-            f"🤖 Generate SQL with {provider_name}", 
-            type="primary", 
-            use_container_width=True,
+            f"🤖 Generate SQL with {provider_name}",
+            type="primary",
+            width="stretch",
             disabled=not is_ai_ready,
             help="Enter a question above to generate SQL" if not is_ai_ready else None
         )
@@ -410,9 +460,9 @@ def main():
         with col1:
             has_sql = bool(st.session_state.generated_sql.strip()) if st.session_state.generated_sql else False
             execute_button = st.button(
-                "✅ Execute Query", 
-                type="primary", 
-                use_container_width=True,
+                "✅ Execute Query",
+                type="primary",
+                width="stretch",
                 disabled=not has_sql,
                 help="Generate SQL first to execute" if not has_sql else None
             )
@@ -425,8 +475,8 @@ def main():
         
         with col2:
             edit_button = st.button(
-                "✏️ Edit", 
-                use_container_width=True,
+                "✏️ Edit",
+                width="stretch",
                 disabled=not has_sql,
                 help="Generate SQL first to edit" if not has_sql else None
             )
@@ -445,14 +495,14 @@ def main():
                 
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    if st.button("🚀 Run Edited Query", type="primary", use_container_width=True):
+                    if st.button("🚀 Run Edited Query", type="primary", width="stretch"):
                         with st.spinner("⚡ Running edited query..."):
                             start_time = time.time()
                             result_df = execute_sql_query(edited_sql, st.session_state.get('parquet_files', []))
                             execution_time = time.time() - start_time
                             display_results(result_df, "Edited Query Results", execution_time)
                 with col2:
-                    if st.button("❌ Cancel", use_container_width=True):
+                    if st.button("❌ Cancel", width="stretch"):
                         st.session_state.show_edit_sql = False
                         st.rerun()
     
@@ -538,7 +588,7 @@ def main():
             fields_df = pd.DataFrame(fields_data)
             st.dataframe(
                 fields_df,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 column_config={
                     "Field": st.column_config.TextColumn(width="medium"),
@@ -637,9 +687,9 @@ def main():
             # Always show execute button, disable if no query
             has_manual_sql = bool(manual_sql.strip())
             execute_manual = st.button(
-                "🚀 Execute Manual Query", 
-                type="primary", 
-                use_container_width=True,
+                "🚀 Execute Manual Query",
+                type="primary",
+                width="stretch",
                 disabled=not has_manual_sql,
                 help="Enter SQL query above to execute" if not has_manual_sql else None
             )
@@ -783,7 +833,7 @@ def main():
             🏠 Single Family Loan Analytics Platform
         </div>
         <div style='color: #6c757d; font-size: 0.8rem; line-height: 1.4;'>
-            Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>Cloudflare R2</strong> • <strong>{ai_provider_text}</strong><br>
+            Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>Google OAuth</strong> • <strong>{ai_provider_text}</strong><br>
             <span style='font-size: 0.75rem; opacity: 0.8;'>
                 Single Family Loan Performance Data
             </span>
@@ -797,4 +847,4 @@ if __name__ == "__main__":
     initialize_app_data()
     
     # Wrap main function with authentication
-    auth_wrapper(main)()
+    simple_auth_wrapper(main)()

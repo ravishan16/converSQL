@@ -4,7 +4,7 @@ Transform natural language questions into powerful SQL queries for mortgage loan
 
 ## 🎯 What This Does
 
-This platform enables mortgage analysts and data scientists to query 56+ million loan records using plain English, automatically generating precise SQL through an ontological data model that understands mortgage finance domain knowledge.
+This platform enables mortgage analysts and data scientists to query millions of loan records using plain English, automatically generating precise SQL through an ontological data model that understands mortgage finance domain knowledge.
 
 **Key Capabilities:**
 - **Natural Language to SQL**: Ask questions like "Show me high-risk loans in California" → Get optimized SQL
@@ -69,14 +69,13 @@ graph TB
     end
 
     subgraph "Security Layer"
-        AUTH[Supabase Auth]
-        RBAC[Role-Based Access]
+        AUTH[Google OAuth]
+        SESS[Session Management]
     end
 
     R2 --> PQ
     PQ --> DUCK
-    ONT --> VAL
-    VAL --> REL
+    ONT --> REL
 
     UI --> QRY
     QRY --> ONT
@@ -84,7 +83,7 @@ graph TB
     BED & CLA & LOC --> DUCK
 
     AUTH --> UI
-    RBAC --> QRY
+    SESS --> QRY
 
     classDef dataNodes fill:#e1f5fe
     classDef aiNodes fill:#f3e5f5
@@ -92,9 +91,9 @@ graph TB
     classDef secNodes fill:#fff3e0
 
     class R2,PQ,DUCK dataNodes
-    class ONT,VAL,REL,BED,CLA,LOC aiNodes
+    class ONT,REL,BED,CLA,LOC aiNodes
     class UI,QRY,VIZ,EXP appNodes
-    class AUTH,RBAC secNodes
+    class AUTH,SESS secNodes
 ```
 
 ## 🚀 Core Components
@@ -117,11 +116,11 @@ graph TB
 - **Advanced SQL Editor**: Direct query access with schema reference
 - **Real-time Results**: Sub-second query execution on 9M+ records
 
-### **4. Enterprise Security**
-- **Authentication**: Supabase-based user management
-- **Authorization**: Role-based data access controls
-- **Data Privacy**: Masked PII fields, secure cloud storage
-- **Audit Logging**: Query tracking and usage analytics
+### **4. Secure Access**
+- **Authentication**: Google OAuth integration
+- **Session Management**: Secure session handling
+- **Data Privacy**: No PII storage, secure cloud storage
+- **Query Tracking**: Session-based query history
 
 ## 📊 Data Overview
 
@@ -134,8 +133,9 @@ graph TB
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9+
-- AI Provider (AWS Bedrock or Anthropic Claude API)
+- Python 3.11+
+- Google OAuth credentials
+- AI Provider (Claude API or AWS Bedrock)
 - Cloudflare R2 or local data storage
 
 ### Installation
@@ -163,10 +163,10 @@ streamlit run app.py
 
 **Essential Setup Documentation:**
 
-- **[🔐 Authentication Setup](docs/SUPABASE_SETUP.md)** - Supabase configuration for user management
+- **[🔐 Google OAuth Setup](GOOGLE_OAUTH_SETUP.md)** - Authentication configuration
 - **[☁️ Cloud Storage Setup](docs/R2_SETUP.md)** - Cloudflare R2 data storage configuration
 - **[🚀 Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
-- **[⚡ Quick Start Guide](docs/AUTH_QUICK_START.md)** - Get up and running in 10 minutes
+- **[⚙️ Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Development environment configuration
 
 ## 🎯 Use Cases
 
@@ -204,4 +204,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Built with:** Python • Streamlit • DuckDB • AWS Bedrock • Anthropic Claude • Supabase • Cloudflare R2
+**Built with:** Python • Streamlit • DuckDB • AWS Bedrock • Anthropic Claude • Google OAuth • Cloudflare R2
