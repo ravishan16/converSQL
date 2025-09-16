@@ -71,7 +71,10 @@ class AuthService:
         try:
             # Use the current URL as redirect if not specified
             if not redirect_to:
-                redirect_to = st.query_params.get('redirect', 'http://localhost:8501')
+                redirect_to = st.query_params.get('redirect')
+                if not redirect_to:
+                    # Use Streamlit's current URL
+                    redirect_to = st.context.headers.get('referer') or st.context.headers.get('origin')
             
             response = self.supabase.auth.sign_in_with_oauth({
                 "provider": "google",

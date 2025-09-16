@@ -780,12 +780,12 @@ def main():
                 border-top: 1px solid #dee2e6; padding: 2rem; margin-top: 2rem;
                 text-align: center; border-radius: 0 0 8px 8px;'>
         <div style='color: #495057; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
-            � Single Family Loan Analytics Platform
+            🏠 Single Family Loan Analytics Platform
         </div>
         <div style='color: #6c757d; font-size: 0.8rem; line-height: 1.4;'>
             Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>Cloudflare R2</strong> • <strong>{ai_provider_text}</strong><br>
             <span style='font-size: 0.75rem; opacity: 0.8;'>
-                Single Family Loan Performance Data • 56.8M+ Loans • $12.4T+ Portfolio Value
+                Single Family Loan Performance Data
             </span>
         </div>
     </div>
