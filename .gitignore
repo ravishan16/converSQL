@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 # C extensions
 *.so
+.env.yml
 
 # Distribution / packaging
 .Python

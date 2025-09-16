@@ -18,7 +18,7 @@ load_dotenv()
 # Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
-ENABLE_AUTH = os.getenv('ENABLE_AUTH', 'false').lower() == 'true'
+ENABLE_AUTH = os.getenv('ENABLE_AUTH', 'true').lower() == 'true'
 
 
 class AuthService:
