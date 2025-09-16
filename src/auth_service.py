@@ -81,7 +81,7 @@ class AuthService:
                         # Fallback to Streamlit's current URL
                         redirect_to = st.context.headers.get('referer') or st.context.headers.get('origin')
                         if not redirect_to:
-                            redirect_to = 'http://localhost:5000'
+                            redirect_to = f"http://localhost:{os.getenv('STREAMLIT_SERVER_PORT', '5000')}"
             
             response = self.supabase.auth.sign_in_with_oauth({
                 "provider": "google",
