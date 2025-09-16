@@ -3,8 +3,11 @@ email = "ravishankar.sivasubramaniam@gmail.com"
 
 [server]
 headless = true
-enableCORS = true
-port = 8501
+enableCORS = false
+enableXsrfProtection = false
+port = 5000
+address = "0.0.0.0"
+allowRunOnSave = true
 
 [theme]
 primaryColor = "#1f77b4"
