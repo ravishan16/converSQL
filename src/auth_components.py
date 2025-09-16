@@ -21,7 +21,7 @@ def render_login_page():
         st.markdown("""
         <div style='text-align: center; margin-bottom: 2rem;'>
             <h1 style='color: #2c3e50; font-weight: 300; margin-bottom: 0.5rem;'>
-                � Single Family Loan Analytics
+                🏠 Single Family Loan Analytics
             </h1>
             <p style='color: #6c757d; font-size: 1.1rem; margin: 0;'>
                 AI-Powered Loan Portfolio Intelligence
