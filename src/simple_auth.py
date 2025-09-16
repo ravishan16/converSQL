@@ -15,6 +15,7 @@ import secrets
 from typing import Dict, Optional, Any
 from urllib.parse import urlencode, parse_qs, urlparse
 from dotenv import load_dotenv
+from .d1_logger import get_d1_logger
 
 # Load environment variables
 load_dotenv()
@@ -185,6 +186,12 @@ def handle_oauth_callback():
             'authenticated_at': time.time()
         }
 
+        # Log login to D1
+        d1_logger = get_d1_logger()
+        if d1_logger.is_enabled():
+            user_agent = st.context.headers.get('user-agent', '') if hasattr(st, 'context') and hasattr(st.context, 'headers') else ''
+            d1_logger.log_user_login(user_info['id'], user_info['email'], user_agent)
+
         if DEMO_MODE:
             st.success(f"✅ Authenticated: {user_info['email']}")
 
@@ -231,11 +238,15 @@ class SimpleAuth:
         return generate_auth_url()
 
     def log_query(self, question: str, sql_query: str, provider: str, execution_time: float):
-        """Log user query (simplified version - just store in session for now)."""
+        """Log user query to both session and D1 database."""
         if not self.is_authenticated():
             return
 
-        # For now, just store recent queries in session state
+        user = self.get_current_user()
+        if not user:
+            return
+
+        # Store in session for immediate access
         if 'query_history' not in st.session_state:
             st.session_state.query_history = []
 
@@ -250,6 +261,18 @@ class SimpleAuth:
         st.session_state.query_history.insert(0, query_log)
         # Keep only last 10 queries
         st.session_state.query_history = st.session_state.query_history[:10]
+
+        # Log to D1 database
+        d1_logger = get_d1_logger()
+        if d1_logger.is_enabled():
+            d1_logger.log_user_query(
+                user['id'],
+                user['email'],
+                question,
+                sql_query,
+                provider,
+                execution_time
+            )
 
     def get_user_query_history(self, limit: int = 10):
         """Get user's query history from session."""
