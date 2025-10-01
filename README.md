@@ -52,7 +52,7 @@ ORDER BY CSCORE_B ASC, OLTV DESC
 LIMIT 20
 ```
 
-📊 **Instant Results** — with context-aware risk metrics and portfolio insights.L
+📊 **Instant Results** — with context-aware risk metrics and portfolio insights.
 
 # converSQL
 
