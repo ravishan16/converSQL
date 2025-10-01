@@ -3,7 +3,7 @@
 **Dataset Overview:**
 - Total Columns: 110
 - Total Rows: 9,091,836
-- File: `/Users/ravi/projects/git/nlptosql/data/processed/data.parquet`
+- File: `/Users/ravi/projects/git/converSQL/data/processed/data.parquet`
 - Date Generated: September 15, 2025
 
 ## Column Categories and Complete Listing

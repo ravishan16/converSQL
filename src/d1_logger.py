@@ -4,22 +4,22 @@ Minimal Cloudflare D1 Logger
 Lightweight logging service for user activity and queries.
 """
 
-import requests
-import json
 import os
-import time
-from typing import Optional, Dict, Any
+from typing import Dict, Optional
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 class D1Logger:
     """Minimal Cloudflare D1 database logger."""
 
     def __init__(self):
-        self.account_id = os.getenv('CLOUDFLARE_ACCOUNT_ID')
-        self.database_id = os.getenv('CLOUDFLARE_D1_DATABASE_ID')
-        self.api_token = os.getenv('CLOUDFLARE_API_TOKEN')
+        self.account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+        self.database_id = os.getenv("CLOUDFLARE_D1_DATABASE_ID")
+        self.api_token = os.getenv("CLOUDFLARE_API_TOKEN")
         self.enabled = bool(self.account_id and self.database_id and self.api_token)
 
     def is_enabled(self) -> bool:
@@ -33,17 +33,12 @@ class D1Logger:
 
         url = f"https://api.cloudflare.com/client/v4/accounts/{self.account_id}/d1/database/{self.database_id}/query"
 
-        headers = {
-            'Authorization': f'Bearer {self.api_token}',
-            'Content-Type': 'application/json'
-        }
+        headers = {"Authorization": f"Bearer {self.api_token}", "Content-Type": "application/json"}
 
-        payload = {
-            'sql': sql
-        }
+        payload = {"sql": sql}
 
         if params:
-            payload['params'] = params
+            payload["params"] = params
 
         try:
             response = requests.post(url, headers=headers, json=payload)
@@ -66,10 +61,11 @@ class D1Logger:
         VALUES (?, ?, ?)
         """
 
-        self._execute_query(sql, [user_id, email, user_agent or ''])
+        self._execute_query(sql, [user_id, email, user_agent or ""])
 
-    def log_user_query(self, user_id: str, email: str, question: str,
-                      sql_query: str, ai_provider: str, execution_time: float):
+    def log_user_query(
+        self, user_id: str, email: str, question: str, sql_query: str, ai_provider: str, execution_time: float
+    ):
         """Log user query event."""
         if not self.enabled:
             return
@@ -96,12 +92,14 @@ class D1Logger:
         """
 
         result = self._execute_query(sql, [user_id])
-        if result and result.get('success') and result.get('result'):
-            return result['result'][0] if result['result'] else {}
+        if result and result.get("success") and result.get("result"):
+            return result["result"][0] if result["result"] else {}
         return {}
+
 
 # Global logger instance
 _d1_logger = None
+
 
 def get_d1_logger() -> D1Logger:
     """Get or create global D1 logger instance."""

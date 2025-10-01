@@ -10,12 +10,12 @@ This guide explains how to set up Cloudflare D1 for logging user activity (login
 ```bash
 npm install -g wrangler
 wrangler login
-wrangler d1 create nlptosql-logs
+wrangler d1 create converSQL-logs
 ```
 
 ### 2. Initialize the Database Schema
 ```bash
-wrangler d1 execute nlptosql-logs --file=scripts/d1_schema.sql
+wrangler d1 execute converSQL-logs --file=scripts/d1_schema.sql
 ```
 
 ### 3. Get Database Credentials
@@ -70,7 +70,7 @@ Minimal tables:
 
 ## Testing
 ```bash
-wrangler d1 execute nlptosql-logs --command="SELECT COUNT(*) FROM user_logins;"
+wrangler d1 execute converSQL-logs --command="SELECT COUNT(*) FROM user_logins;"
 ```
 
 ---

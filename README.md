@@ -1,7 +1,64 @@
 
-# Conversational SQL
+# Conver---
 
-**Conversational SQL** is an open-source framework for transforming natural language questions into powerful SQL queries for any tabular dataset. It’s designed for developers, data scientists, and teams who want to build AI-powered analytics tools with minimal effort.
+## 📖 The Story Behind converSQL
+
+### The Problem
+
+Data is everywhere, but accessing it remains a technical barrier. Analysts spend hours writing SQL queries. Business users wait for reports. Data scientists translate questions into complex joins and aggregations. Meanwhile, the insights trapped in your data remain just out of reach for those who need them most.
+
+Traditional BI tools offer pre-built dashboards, but they're rigid. They can't answer the questions you didn't anticipate. And when you need a custom query, you're back to writing SQL or waiting in the queue for engineering support.
+
+### The Open Data Opportunity
+
+What if we could turn this around? What if anyone could ask questions in plain English and get instant, accurate SQL queries tailored to their specific data domain?
+
+That's where converSQL comes in. Built on the principle that **data should be conversational**, converSQL combines:
+- **Ontological modeling**: Structured knowledge about your data domains, relationships, and business rules
+- **AI-powered generation**: Multiple AI engines (Bedrock, Claude, Gemini, Ollama) that understand context and generate accurate SQL
+- **Open data focus**: Showcasing what's possible with publicly available datasets like Fannie Mae's Single Family Loan Performance Data
+
+### Our Mission
+
+We believe data analysis should be:
+- **Accessible**: Ask questions in natural language, get answers in seconds
+- **Intelligent**: Understand business context, not just column names
+- **Extensible**: Easy to adapt to any domain with any data structure
+- **Open**: Built on open-source principles, welcoming community contributions
+
+---
+
+## 🏡 Flagship Implementation: Single Family Loan Analytics
+
+To demonstrate converSQL's capabilities, we've built a production-ready application analyzing **9+ million mortgage loan records** from Fannie Mae's public dataset.
+
+### Why This Matters
+
+The Single Family Loan Performance Data represents one of the most comprehensive public datasets on U.S. mortgage markets. It contains granular loan-level data spanning originations, performance, modifications, and defaults. But with 110+ columns and complex domain knowledge required, it's challenging to analyze effectively.
+
+**converSQL makes it conversational:**
+
+🔍 **Natural Language Query:**  
+*"Show me high-risk loans in California with credit scores below 620"*
+
+✨ **Generated SQL:**
+```sql
+SELECT LOAN_ID, STATE, CSCORE_B, OLTV, DTI, DLQ_STATUS, CURRENT_UPB
+FROM data
+WHERE STATE = 'CA' 
+  AND CSCORE_B < 620
+  AND CSCORE_B IS NOT NULL
+ORDER BY CSCORE_B ASC, OLTV DESC
+LIMIT 20
+```
+
+📊 **Instant Results** — with context-aware risk metrics and portfolio insights.L
+
+# converSQL
+
+> **Transform Natural Language into SQL — Intelligently**
+
+**converSQL** is an open-source framework that bridges the gap between human questions and database queries. Using ontological data modeling and AI-powered query generation, converSQL makes complex data analysis accessible to everyone — from analysts to executives — without requiring SQL expertise.
 
 ## 🚀 Why Conversational SQL?
 
@@ -15,95 +72,55 @@ Stop writing complex SQL by hand! With Conversational SQL, you can:
 
 This repo features a production-grade implementation for mortgage loan portfolio analysis. It’s a showcase of how Conversational SQL can power real-world, domain-specific analytics.
 
-**Key Features:**
-- **Natural Language to SQL**: "Show me high-risk loans in California" → SQL
-- **Ontological Intelligence**: 110+ fields, 15 business domains, semantic relationships
-- **Real-time Analytics**: Dashboards, metrics, risk indicators
-- **Multi-Provider AI**: Anthropic Claude, AWS Bedrock, local models
-- **Cloudflare D1 Logging**: All user logins and queries are securely logged using Cloudflare D1 (no external DB required)
+### Key Features
 
+- **🧠 Ontological Intelligence**: 110+ fields organized into 15 business domains (Credit Risk, Geographic, Temporal, Performance, etc.)
+- **🎯 Domain-Aware Context**: AI understands mortgage terminology — "high-risk" automatically considers credit scores, LTV ratios, and DTI
+- **⚡ High-Performance Pipeline**: Pipe-separated CSVs → Parquet with schema enforcement, achieving 10x compression and instant query performance
+- **🔐 Enterprise Security**: Google OAuth integration with Cloudflare D1 query logging
+- **🚀 Multiple AI Engines**: Out-of-the-box support for AWS Bedrock, Claude API, and extensible to Gemini, Ollama, and more
 
-## 🧠 How Ontology Improves SQL Generation
-
-Conversational SQL uses an ontological approach to bridge the gap between natural language and complex, domain-specific SQL. This enables:
-
-- **Accurate mapping of business terms to data fields**
-- **Automatic handling of semantic relationships and business rules**
-- **Consistent, explainable query generation for analytics and reporting**
-
-**Examples:**
-
-- *Domain-Aware Context*: Instead of "Show loans in bad condition," the ontology maps this to `DLQ_STATUS = '03'` (90+ days delinquent).
-- *Semantic Relationships*: "High-risk borrowers" automatically includes:
-    - `CSCORE_B < 620` (credit quality)
-    - `OLTV > 95%` (equity position)
-    - `DTI > 43%` (payment capacity)
-- *Business Intelligence Integration*: "Portfolio concentration risk" generates:
-    ```sql
-    SELECT STATE, SUM(CURRENT_UPB)/1000000 as UPB_MM,
-           COUNT(*) as loan_count,
-           SUM(CURRENT_UPB)/(SELECT SUM(CURRENT_UPB) FROM data)*100 as pct_portfolio
-    FROM data GROUP BY STATE HAVING pct_portfolio > 15
-    ```
+---
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TB
-    subgraph "Data Layer"
-        R2[Cloudflare R2 Storage]
-        PQ[Parquet Files<br/>9M+ loan records]
-        DUCK[DuckDB Engine]
-        D1[Cloudflare D1 Logging]
-    end
+converSQL follows a clean, layered architecture designed for extensibility:
 
-    subgraph "Intelligence Layer"
-        ONT[Ontological Data Dictionary<br/>15 Domains × 110 Fields]
-        VAL[Query Validator<br/>Business Rules]
-        REL[Semantic Relationships]
-    end
-
-    subgraph "AI Layer"
-        BED[AWS Bedrock]
-        CLA[Anthropic Claude]
-        LOC[Local Models]
-    end
-
-    subgraph "Application Layer"
-        UI[Streamlit Interface]
-        QRY[Query Builder]
-        VIZ[Data Visualization]
-        EXP[Ontology Explorer]
-    end
-
-    subgraph "Security Layer"
-        AUTH[Google OAuth]
-        SESS[Session Management]
-    end
-
-    R2 --> PQ
-    PQ --> DUCK
-    ONT --> REL
-    D1 --> UI
-
-    UI --> QRY
-    QRY --> ONT
-    QRY --> BED & CLA & LOC
-    BED & CLA & LOC --> DUCK
-
-    AUTH --> UI
-    SESS --> QRY
-
-    classDef dataNodes fill:#e1f5fe
-    classDef aiNodes fill:#f3e5f5
-    classDef appNodes fill:#e8f5e8
-    classDef secNodes fill:#fff3e0
-
-    class R2,PQ,DUCK,D1 dataNodes
-    class ONT,REL,BED,CLA,LOC aiNodes
-    class UI,QRY,VIZ,EXP appNodes
-    class AUTH,SESS secNodes
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                     Application Layer                        │
+│  (Streamlit UI • Query Builder • Ontology Explorer)         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────┴────────────────────────────────────┐
+│                      AI Engine Layer                         │
+│  (Adapter Pattern: Bedrock • Claude • Gemini • Ollama)      │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────┴────────────────────────────────────┐
+│                   Intelligence Layer                         │
+│  (Ontology • Schema Context • Business Rules)               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────┴────────────────────────────────────┐
+│                      Data Layer                              │
+│  (Parquet Files • DuckDB • R2 Storage • Query Execution)    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### The Data Engineering Pipeline
+
+Our showcase implementation demonstrates a complete data engineering workflow:
+
+1. **Ingestion**: Fannie Mae's pipe-separated loan performance files
+2. **Transformation**: Schema enforcement with explicit data types (VARCHAR, Float, Int16, etc.)
+3. **Storage**: Parquet format with SNAPPY compression (10x size reduction)
+4. **Performance**: DuckDB for blazing-fast analytical queries
+5. **Ontology**: Structured metadata linking business concepts to database schema
+
+📄 **[Learn more about the data pipeline →](docs/DATA_PIPELINE.md)**
+
+---
 
 ## �️ Quick Start
 
@@ -116,7 +133,7 @@ graph TB
 ### Installation
 ```bash
 git clone <repository-url>
-cd nlptosql
+cd converSQL
 pip install -r requirements.txt
 ```
 
@@ -147,26 +164,151 @@ All setup and deployment guides are located in the `docs/` directory:
 
 
 
-## 💡 Extending Conversational SQL
+## � Documentation
 
-Conversational SQL is designed for easy adaptation to any tabular dataset. To use it for your own data, simply swap out the ontology and schema files for your domain.
+### Setup Guides
+- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** — Configure environment variables and dependencies
+- **[Data Pipeline Setup](docs/DATA_PIPELINE.md)** — Understand and customize the data pipeline
+- **[Google OAuth Setup](docs/GOOGLE_OAUTH_SETUP.md)** — Enable authentication
+- **[Cloud Storage Setup](docs/R2_SETUP.md)** — Configure Cloudflare R2
+- **[Deployment Guide](docs/DEPLOYMENT.md)** — Deploy to production
 
-
-## 🎯 Example Use Cases
-
-- **Portfolio Risk Management**: "Show me all loans in Florida with FICO scores below 620"
-- **Performance Analytics**: "What's the delinquency rate by vintage year for California loans?"
-- **Concentration Risk**: "Which states have more than 15% of our portfolio?"
-- **Credit Quality Assessment**: "Compare average DTI and LTV by credit score tier"
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our contributing guidelines for code standards, testing requirements, and the pull request process.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Developer Guides
+- **[Contributing Guide](CONTRIBUTING.md)** — How to contribute to converSQL
+- **[AI Engine Development](docs/AI_ENGINES.md)** — Add support for new AI providers
+- **[Architecture Overview](docs/ARCHITECTURE.md)** — Deep dive into system design
 
 ---
 
-**Built with:** Python • Streamlit • DuckDB • AWS Bedrock • Anthropic Claude • Google OAuth • Cloudflare R2 • Cloudflare D1
+## 🤝 Contributing
+
+We welcome contributions from the community! Whether you're:
+- 🐛 Reporting bugs
+- 💡 Suggesting features
+- 🔧 Adding new AI engine adapters
+- 📖 Improving documentation
+- 🎨 Enhancing the UI
+
+**Your contributions make converSQL better for everyone.**
+
+### How to Contribute
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+3. **Make your changes** with clear commit messages
+4. **Test thoroughly** — ensure existing functionality still works
+5. **Submit a pull request** with a detailed description
+
+📄 **[Read the full contributing guide →](CONTRIBUTING.md)**
+
+### Adding New AI Engines
+
+converSQL uses an adapter pattern for AI engines. Adding a new provider is straightforward:
+
+1. Implement the `AIEngineAdapter` interface
+2. Add configuration options
+3. Register in the AI service
+4. Test and document
+
+📄 **[AI Engine Development Guide →](docs/AI_ENGINES.md)**
+
+---
+
+## 🎯 Use Cases Beyond Loan Analytics
+
+While our flagship implementation focuses on mortgage data, converSQL is designed for **any domain** with tabular data:
+
+### Financial Services
+- Credit card transaction analysis
+- Investment portfolio performance
+- Fraud detection patterns
+- Regulatory reporting
+
+### Healthcare
+- Patient outcomes analysis
+- Clinical trial data exploration
+- Hospital performance metrics
+- Insurance claims analytics
+
+### E-commerce
+- Customer behavior patterns
+- Inventory optimization
+- Sales performance tracking
+- Supply chain analytics
+
+### Your Domain
+**Bring your own data** — converSQL adapts through ontological modeling. Define your domains, specify relationships, and let AI handle the query generation.
+
+---
+
+## 🌟 Why converSQL?
+
+### For Analysts
+- **Stop writing SQL by hand** — describe what you want, get optimized queries
+- **Explore data faster** — try different angles without syntax barriers
+- **Focus on insights** — spend time analyzing, not coding
+
+### For Data Engineers
+- **Modular architecture** — swap AI providers, storage backends, or UI components
+- **Production-ready** — authentication, logging, caching, error handling built-in
+- **Extensible ontology** — encode business logic once, reuse everywhere
+
+### For Organizations
+- **Democratize data access** — empower non-technical users to explore data
+- **Reduce bottlenecks** — less waiting for custom reports and queries
+- **Open source** — no vendor lock-in, full transparency, community-driven development
+
+---
+
+## 🛣️ Roadmap
+
+### Current Focus (v1.0)
+- ✅ Multi-AI engine support (Bedrock, Claude, Gemini)
+- ✅ Bedrock Guardrails integration for content filtering
+- ✅ Ontological data modeling
+- ✅ Single Family Loan Analytics showcase
+- 🔄 Ollama adapter implementation
+- 🔄 Enhanced query validation and optimization
+
+### Future Enhancements (v2.0+)
+- Multi-table query generation with JOIN intelligence
+- Query explanation and visualization
+- Historical query learning and optimization
+- More domain-specific implementations (healthcare, e-commerce, etc.)
+- API server mode for programmatic access
+- Web-based ontology editor
+
+**Have ideas?** [Open an issue](https://github.com/ravishan16/conversql/issues) or join the discussion!
+
+---
+
+## 📄 License
+
+**MIT License** — Free to use, modify, and distribute.
+
+See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Fannie Mae** for making Single Family Loan Performance Data publicly available
+- **DuckDB** team for an incredible analytical database engine
+- **Anthropic** and **AWS** for powerful AI models
+- **Streamlit** for making data apps beautiful and easy
+- **Open source community** for inspiration and contributions
+
+---
+
+## 📬 Stay Connected
+
+- **⭐ Star this repo** to follow development
+- **🐦 Share your use cases** — we'd love to hear how you're using converSQL
+- **💬 Join discussions** — ask questions, share ideas, help others
+- **🐛 Report issues** — help us improve
+
+---
+
+**Built with ❤️ by the converSQL community**
+
+*Making data conversational, one query at a time.*

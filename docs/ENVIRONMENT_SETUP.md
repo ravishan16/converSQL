@@ -25,16 +25,29 @@ AI_PROVIDER=bedrock
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_DEFAULT_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+BEDROCK_MODEL_ID=anthropic.claude-3-5-haiku-20241022-v1:0
 BEDROCK_MAX_TOKENS=4096
+
+# Optional: Bedrock Guardrails for content filtering
+BEDROCK_GUARDRAIL_ID=your-guardrail-id
+BEDROCK_GUARDRAIL_VERSION=DRAFT  # or specific version number
 ```
 
 #### Anthropic Claude API
 ```bash
 AI_PROVIDER=claude
-ANTHROPIC_API_KEY=sk-ant-your-api-key-here
-CLAUDE_MODEL=claude-3-sonnet-20240229
+CLAUDE_API_KEY=sk-ant-your-api-key-here
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
 CLAUDE_MAX_TOKENS=4096
+```
+
+#### Google Gemini
+```bash
+AI_PROVIDER=gemini
+GOOGLE_API_KEY=your-google-api-key
+# or
+GEMINI_API_KEY=your-google-api-key
+GEMINI_MODEL=gemini-1.5-pro
 ```
 
 ### Authentication (Optional)
@@ -79,7 +92,7 @@ pip install -r requirements.txt
 1. Clone the repository and set up your environment:
    ```bash
    git clone <repository-url>
-   cd nlptosql
+   cd converSQL
    cp .env.example .env
    pip install -r requirements.txt
    ```

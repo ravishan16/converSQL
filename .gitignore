@@ -1,10 +1,18 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[codz]
+*.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*~
+
 # C extensions
 *.so
+
+# Environment files
+.env
 .env.yml
+.env.local
 
 # Distribution / packaging
 .Python
@@ -46,10 +54,13 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
+*.py,cover
 *.py.cover
 .hypothesis/
 .pytest_cache/
 cover/
+test-results/
+*.xml
 
 # Translations
 *.mo
@@ -57,6 +68,8 @@ cover/
 
 # Django stuff:
 *.log
+*.out
+*.err
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -143,6 +156,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.python-version
 
 # Spyder project settings
 .spyderproject
@@ -205,3 +219,16 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.DS_Store
+
+# Backup files
+*_old.py
+*_backup.py
+data/raw/2025Q1.csv

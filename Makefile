@@ -1,11 +1,11 @@
-# NLP to SQL - Makefile
+# converSQL - Makefile
 # Professional development utilities for the Streamlit application
 
-.PHONY: help clean clean-cache clean-logs start dev install test lint format check-deps
+.PHONY: help clean clean-cache clean-logs start dev install install-dev test test-unit test-integration test-cov lint format format-check check-deps setup ci
 
 # Default target
 help:
-	@echo "🔍 NLP to SQL - Development Commands"
+	@echo "🔍 converSQL - Development Commands"
 	@echo "=================================="
 	@echo ""
 	@echo "📱 Application Commands:"
@@ -19,16 +19,23 @@ help:
 	@echo ""
 	@echo "🛠️  Development Commands:"
 	@echo "  install      Install dependencies from requirements.txt"
-	@echo "  test         Run tests (if available)"
-	@echo "  lint         Run code linting"
-	@echo "  format       Format code with black"
+	@echo "  install-dev  Install with development dependencies"
+	@echo "  test         Run all tests with coverage"
+	@echo "  test-unit    Run unit tests only"
+	@echo "  test-integration Run integration tests only"
+	@echo "  test-cov     Run tests with coverage report"
+	@echo "  lint         Run code linting (flake8)"
+	@echo "  format       Format code with black and isort"
+	@echo "  format-check Check code formatting without changes"
 	@echo "  check-deps   Check for dependency updates"
+	@echo "  setup        Complete setup for new development environment"
+	@echo "  ci           Run full CI checks (format, lint, test)"
 	@echo ""
 	@echo "Usage: make <command>"
 
 # Start Streamlit application with logging
 start:
-	@echo "🚀 Starting NLP to SQL Streamlit App..."
+	@echo "🚀 Starting converSQL Streamlit App..."
 	@echo "📍 URL: http://localhost:8501"
 	@echo "📝 Logs will be displayed below..."
 	@echo "=================================="
@@ -48,7 +55,12 @@ clean: clean-cache clean-logs
 	@find . -type f -name "*.tmp" -delete 2>/dev/null || true
 	@find . -type f -name "*.temp" -delete 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	@find . -type d -name ".coverage" -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf .pytest_cache 2>/dev/null || true
+	@rm -f .coverage 2>/dev/null || true
+	@rm -f coverage.xml 2>/dev/null || true
+	@rm -rf htmlcov 2>/dev/null || true
+	@rm -rf .mypy_cache 2>/dev/null || true
+	@rm -rf .ruff_cache 2>/dev/null || true
 	@echo "✅ Cleanup completed!"
 
 # Clean Python cache files
@@ -56,6 +68,7 @@ clean-cache:
 	@echo "🧹 Cleaning Python cache files..."
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	@find . -type f -name "*~" -delete 2>/dev/null || true
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name ".DS_Store" -delete 2>/dev/null || true
@@ -66,6 +79,7 @@ clean-logs:
 	@echo "🧹 Cleaning log files..."
 	@find . -type f -name "*.log" -delete 2>/dev/null || true
 	@find . -type f -name "*.out" -delete 2>/dev/null || true
+	@find . -type f -name "*.err" -delete 2>/dev/null || true
 	@echo "✅ Log files cleaned!"
 
 # Install dependencies
@@ -74,32 +88,61 @@ install:
 	@pip install -r requirements.txt
 	@echo "✅ Dependencies installed!"
 
-# Run tests (if test files exist)
+# Install with development dependencies
+install-dev: install
+	@echo "📦 Installing development dependencies..."
+	@pip install -r requirements.txt
+	@echo "✅ All dependencies installed!"
+
+# Run all tests with coverage
 test:
-	@echo "🧪 Running tests..."
-	@if [ -d "tests" ] || ls test_*.py 1> /dev/null 2>&1; then \
-		python -m pytest -v; \
-	else \
-		echo "⚠️  No tests found. Create test files to enable testing."; \
-	fi
+	@echo "🧪 Running all tests with coverage..."
+	@pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html
+	@echo "✅ Tests completed! Coverage report: htmlcov/index.html"
+
+# Run unit tests only
+test-unit:
+	@echo "🧪 Running unit tests..."
+	@pytest tests/unit/ -v -m "not integration"
+	@echo "✅ Unit tests completed!"
+
+# Run integration tests only
+test-integration:
+	@echo "🧪 Running integration tests..."
+	@pytest tests/integration/ -v -m integration
+	@echo "✅ Integration tests completed!"
+
+# Run tests with detailed coverage
+test-cov:
+	@echo "🧪 Running tests with detailed coverage..."
+	@pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml --cov-branch
+	@echo "✅ Coverage reports generated:"
+	@echo "   - Terminal: (shown above)"
+	@echo "   - HTML: htmlcov/index.html"
+	@echo "   - XML: coverage.xml"
 
 # Run linting
 lint:
 	@echo "🔍 Running code linting..."
-	@if command -v flake8 >/dev/null 2>&1; then \
-		flake8 app.py --max-line-length=88 --ignore=E203,W503; \
-	else \
-		echo "⚠️  flake8 not installed. Run: pip install flake8"; \
-	fi
+	@echo "Running flake8..."
+	@flake8 src/ tests/ app.py || echo "⚠️  Flake8 found issues"
+	@echo "Running mypy..."
+	@mypy src/ || echo "⚠️  MyPy found issues"
+	@echo "✅ Linting completed!"
 
-# Format code
+# Format code with black and isort
 format:
-	@echo "✨ Formatting code..."
-	@if command -v black >/dev/null 2>&1; then \
-		black app.py --line-length=88; \
-	else \
-		echo "⚠️  black not installed. Run: pip install black"; \
-	fi
+	@echo "✨ Formatting code with black and isort..."
+	@black --line-length 120 src/ tests/ app.py
+	@isort --profile black src/ tests/ app.py
+	@echo "✅ Code formatted!"
+
+# Check code formatting without making changes
+format-check:
+	@echo "🔍 Checking code formatting..."
+	@black --check --line-length 120 src/ tests/ app.py || (echo "❌ Code needs formatting. Run 'make format'" && exit 1)
+	@isort --check-only --profile black src/ tests/ app.py || (echo "❌ Imports need sorting. Run 'make format'" && exit 1)
+	@echo "✅ Code formatting is correct!"
 
 # Check for dependency updates
 check-deps:
@@ -113,10 +156,17 @@ check-deps:
 	fi
 
 # Quick setup for new development environment
-setup: install clean
+setup: install-dev clean
 	@echo "🎉 Setup completed! Ready for development."
 	@echo ""
 	@echo "Quick start:"
 	@echo "  make start    # Start the application"
 	@echo "  make dev      # Start in development mode"
+	@echo "  make test     # Run tests"
 	@echo "  make help     # Show all available commands"
+
+# Run full CI checks locally
+ci: clean format-check lint test-cov
+	@echo "✅ All CI checks passed!"
+	@echo ""
+	@echo "Ready to commit and push!"

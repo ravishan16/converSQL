@@ -4,23 +4,25 @@ Core functionality for Single Family Loan Analytics Platform
 Enhanced with caching, AI service integration, and R2 support.
 """
 
+import glob
+import os
+from typing import Dict, List, Optional, Tuple
+
 import duckdb
 import pandas as pd
-import os
-import glob
 import streamlit as st
-from typing import List, Dict, Optional, Tuple
 from dotenv import load_dotenv
+
+from .ai_service import generate_sql_with_ai, get_ai_service
 from .data_dictionary import generate_enhanced_schema_context
-from .ai_service import get_ai_service, generate_sql_with_ai
 
 # Load environment variables
 load_dotenv()
 
 # Configuration from environment variables
-PROCESSED_DATA_DIR = os.getenv('PROCESSED_DATA_DIR', 'data/processed/')
-DEMO_MODE = os.getenv('DEMO_MODE', 'false').lower() == 'true'
-CACHE_TTL = int(os.getenv('CACHE_TTL', '3600'))  # 1 hour default
+PROCESSED_DATA_DIR = os.getenv("PROCESSED_DATA_DIR", "data/processed/")
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 1 hour default
 
 
 @st.cache_data(ttl=CACHE_TTL)
@@ -28,13 +30,13 @@ def scan_parquet_files() -> List[str]:
     """Scan the processed directory for Parquet files. Cached for performance."""
     # Check if data sync is needed
     sync_data_if_needed()
-    
+
     if not os.path.exists(PROCESSED_DATA_DIR):
         return []
-    
+
     pattern = os.path.join(PROCESSED_DATA_DIR, "*.parquet")
     parquet_files = glob.glob(pattern)
-    
+
     return parquet_files
 
 
@@ -55,6 +57,7 @@ def sync_data_if_needed(force: bool = False) -> bool:
                 # Verify files are not empty/corrupted
                 try:
                     import duckdb
+
                     conn = duckdb.connect()
                     # Quick validation - try to read first file
                     test_query = f"SELECT COUNT(*) FROM '{parquet_files[0]}'"
@@ -77,9 +80,9 @@ def sync_data_if_needed(force: bool = False) -> bool:
         import subprocess
         import sys
 
-        sync_args = [sys.executable, 'scripts/sync_data.py']
+        sync_args = [sys.executable, "scripts/sync_data.py"]
         if force:
-            sync_args.append('--force')
+            sync_args.append("--force")
 
         result = subprocess.run(sync_args, capture_output=True, text=True)
 
@@ -102,7 +105,7 @@ def get_table_schemas(parquet_files: List[str]) -> str:
     """Generate enhanced CREATE TABLE statements with rich metadata. Cached for performance."""
     if not parquet_files:
         return ""
-    
+
     try:
         return generate_enhanced_schema_context(parquet_files)
     except Exception:
@@ -114,29 +117,29 @@ def get_basic_table_schemas(parquet_files: List[str]) -> str:
     """Fallback basic schema generation."""
     if not parquet_files:
         return ""
-    
+
     create_statements = []
-    
+
     try:
         conn = duckdb.connect()
-        
+
         for file_path in parquet_files:
             table_name = os.path.splitext(os.path.basename(file_path))[0]
             query = f"DESCRIBE SELECT * FROM '{file_path}' LIMIT 1"
             schema_df = conn.execute(query).fetchdf()
-            
+
             columns = []
             for _, row in schema_df.iterrows():
-                column_name = row['column_name']
-                column_type = row['column_type']
+                column_name = row["column_name"]
+                column_type = row["column_type"]
                 columns.append(f"    {column_name} {column_type}")
-            
+
             create_statement = f"CREATE TABLE {table_name} (\n" + ",\n".join(columns) + "\n);"
             create_statements.append(create_statement)
-        
+
         conn.close()
         return "\n\n".join(create_statements)
-        
+
     except Exception:
         return ""
 
@@ -158,18 +161,18 @@ def execute_sql_query(sql_query: str, parquet_files: List[str]) -> pd.DataFrame:
     """Execute SQL query using DuckDB."""
     try:
         conn = duckdb.connect()
-        
+
         # Register each Parquet file as a table
         for file_path in parquet_files:
             table_name = os.path.splitext(os.path.basename(file_path))[0]
             conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM '{file_path}'")
-        
+
         # Execute the user's query
         result_df = conn.execute(sql_query).fetchdf()
         conn.close()
-        
+
         return result_df
-        
+
     except Exception:
         return pd.DataFrame()
 
@@ -186,7 +189,7 @@ def get_analyst_questions() -> Dict[str, str]:
         "📊 Market Share by Channel": "Show origination volume and average loan characteristics by channel (Retail, Correspondent, Broker) for top 5 volume states",
         "🔍 Credit Migration Analysis": "For loans aged 24-48 months (2020-2021 vintage), show how many have migrated from current to 30+ day delinquent status by original credit score",
         "🌟 Super Prime Performance": "Analyze our Super Prime segment (740+ credit scores) - show portfolio share, average UPB, geographic distribution, and performance metrics",
-        "🎲 Rate Sensitivity Analysis": "Compare current portfolio performance between ultra-low rate loans (2-4%) vs higher rate loans (5%+) - show delinquency rates and paydown behavior"
+        "🎲 Rate Sensitivity Analysis": "Compare current portfolio performance between ultra-low rate loans (2-4%) vs higher rate loans (5%+) - show delinquency rates and paydown behavior",
     }
 
 
@@ -194,7 +197,7 @@ def get_ai_service_status() -> Dict[str, any]:
     """Get AI service status for UI display."""
     service = get_ai_service()
     return {
-        'available': service.is_available(),
-        'active_provider': service.get_active_provider(),
-        'provider_status': service.get_provider_status()
+        "available": service.is_available(),
+        "active_provider": service.get_active_provider(),
+        "provider_status": service.get_provider_status(),
     }
