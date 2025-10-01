@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, enhance-pipeline ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   lint:
     name: Code Quality Checks
@@ -105,12 +109,15 @@ jobs:
   format:
     name: Auto-format Code
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -128,15 +135,20 @@ jobs:
     - name: Sort imports with isort
       run: isort --profile black src/ tests/
     
-    - name: Commit changes
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit and push changes
+      if: steps.verify-changed-files.outputs.changed == 'true'
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git diff --quiet && git diff --staged --quiet || (git add -A && git commit -m "style: auto-format code with black and isort [skip ci]")
-    
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
-      if: success()
+        git add -A
+        git commit -m "style: auto-format code with black and isort [skip ci]"
+        git push
