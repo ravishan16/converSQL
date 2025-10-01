@@ -1,43 +1,50 @@
-# Single Family Loan Analytics Platform
 
-Transform natural language questions into powerful SQL queries for mortgage loan portfolio analysis using AI-powered ontology-driven intelligence.
+# Conversational SQL
 
-## 🎯 What This Does
+**Conversational SQL** is an open-source framework for transforming natural language questions into powerful SQL queries for any tabular dataset. It’s designed for developers, data scientists, and teams who want to build AI-powered analytics tools with minimal effort.
 
-This platform enables mortgage analysts and data scientists to query millions of loan records using plain English, automatically generating precise SQL through an ontological data model that understands mortgage finance domain knowledge.
+## 🚀 Why Conversational SQL?
 
-**Key Capabilities:**
-- **Natural Language to SQL**: Ask questions like "Show me high-risk loans in California" → Get optimized SQL
-- **Ontological Intelligence**: 110+ data fields organized across 15 business domains with semantic relationships
-- **Real-time Analytics**: Interactive dashboards with loan performance metrics and risk indicators
-- **Multi-Provider AI**: Support for AWS Bedrock, Anthropic Claude, and local models
+Stop writing complex SQL by hand! With Conversational SQL, you can:
+- Ask questions in plain English and get optimized SQL instantly
+- Integrate with multiple AI providers (Anthropic Claude, AWS Bedrock, local models)
+- Extend to any domain with ontological data modeling
+- Build interactive dashboards, query builders, and analytics apps
+
+## 🏆 Flagship Use Case: Single Family Loan Analytics
+
+This repo features a production-grade implementation for mortgage loan portfolio analysis. It’s a showcase of how Conversational SQL can power real-world, domain-specific analytics.
+
+**Key Features:**
+- **Natural Language to SQL**: "Show me high-risk loans in California" → SQL
+- **Ontological Intelligence**: 110+ fields, 15 business domains, semantic relationships
+- **Real-time Analytics**: Dashboards, metrics, risk indicators
+- **Multi-Provider AI**: Anthropic Claude, AWS Bedrock, local models
+- **Cloudflare D1 Logging**: All user logins and queries are securely logged using Cloudflare D1 (no external DB required)
+
 
 ## 🧠 How Ontology Improves SQL Generation
 
-Traditional NL-to-SQL systems struggle with domain-specific terminology and field relationships. Our ontological approach:
+Conversational SQL uses an ontological approach to bridge the gap between natural language and complex, domain-specific SQL. This enables:
 
-### 1. **Domain-Aware Context**
-```
-Instead of: "Show loans in bad condition"
-Ontology understands: DLQ_STATUS = '03' (90+ days delinquent)
-```
+- **Accurate mapping of business terms to data fields**
+- **Automatic handling of semantic relationships and business rules**
+- **Consistent, explainable query generation for analytics and reporting**
 
-### 2. **Semantic Relationships**
-```
-"High-risk borrowers" automatically includes:
-- CSCORE_B < 620 (credit quality)
-- OLTV > 95% (equity position)
-- DTI > 43% (payment capacity)
-```
+**Examples:**
 
-### 3. **Business Intelligence Integration**
-```
-"Portfolio concentration risk" generates:
-SELECT STATE, SUM(CURRENT_UPB)/1000000 as UPB_MM,
-       COUNT(*) as loan_count,
-       SUM(CURRENT_UPB)/(SELECT SUM(CURRENT_UPB) FROM data)*100 as pct_portfolio
-FROM data GROUP BY STATE HAVING pct_portfolio > 15
-```
+- *Domain-Aware Context*: Instead of "Show loans in bad condition," the ontology maps this to `DLQ_STATUS = '03'` (90+ days delinquent).
+- *Semantic Relationships*: "High-risk borrowers" automatically includes:
+    - `CSCORE_B < 620` (credit quality)
+    - `OLTV > 95%` (equity position)
+    - `DTI > 43%` (payment capacity)
+- *Business Intelligence Integration*: "Portfolio concentration risk" generates:
+    ```sql
+    SELECT STATE, SUM(CURRENT_UPB)/1000000 as UPB_MM,
+           COUNT(*) as loan_count,
+           SUM(CURRENT_UPB)/(SELECT SUM(CURRENT_UPB) FROM data)*100 as pct_portfolio
+    FROM data GROUP BY STATE HAVING pct_portfolio > 15
+    ```
 
 ## 🏗️ Architecture
 
@@ -47,6 +54,7 @@ graph TB
         R2[Cloudflare R2 Storage]
         PQ[Parquet Files<br/>9M+ loan records]
         DUCK[DuckDB Engine]
+        D1[Cloudflare D1 Logging]
     end
 
     subgraph "Intelligence Layer"
@@ -76,6 +84,7 @@ graph TB
     R2 --> PQ
     PQ --> DUCK
     ONT --> REL
+    D1 --> UI
 
     UI --> QRY
     QRY --> ONT
@@ -90,47 +99,13 @@ graph TB
     classDef appNodes fill:#e8f5e8
     classDef secNodes fill:#fff3e0
 
-    class R2,PQ,DUCK dataNodes
+    class R2,PQ,DUCK,D1 dataNodes
     class ONT,REL,BED,CLA,LOC aiNodes
     class UI,QRY,VIZ,EXP appNodes
     class AUTH,SESS secNodes
 ```
 
-## 🚀 Core Components
-
-### **1. Ontological Data Dictionary**
-- **15 Business Domains**: Identification, Temporal, Credit Risk, Geographic, etc.
-- **110+ Field Mappings**: Complete mortgage loan lifecycle coverage
-- **Semantic Relationships**: Credit triangle (Credit + Collateral + Capacity)
-- **Risk Intelligence**: Built-in risk tiers and business rules
-
-### **2. AI-Powered Query Engine**
-- **Multi-Provider Support**: AWS Bedrock (Claude, Titan), Anthropic Claude API
-- **Context-Aware Generation**: Domain knowledge + field relationships + business rules
-- **Query Validation**: Syntax checking, field validation, performance optimization
-- **Natural Language Processing**: Complex financial terminology understanding
-
-### **3. Interactive Analytics Interface**
-- **Query Builder**: Natural language input with AI-powered SQL generation
-- **Ontology Explorer**: Interactive data model navigation
-- **Advanced SQL Editor**: Direct query access with schema reference
-- **Real-time Results**: Sub-second query execution on 9M+ records
-
-### **4. Secure Access**
-- **Authentication**: Google OAuth integration
-- **Session Management**: Secure session handling
-- **Data Privacy**: No PII storage, secure cloud storage
-- **Query Tracking**: Session-based query history
-
-## 📊 Data Overview
-
-- **Records**: 9+ million individual loan performance observations
-- **Time Range**: 1999-2025 loan originations with monthly updates
-- **Coverage**: All 50 states + DC, $12.4 trillion original UPB
-- **Performance**: 0.3% lifetime loss rate, 98% current payment rate
-- **Storage**: Optimized Parquet format for high-performance analytics
-
-## 🚀 Quick Start
+## �️ Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -159,40 +134,30 @@ cp .env.example .env
 streamlit run app.py
 ```
 
-## 📖 Setup Guides
 
-**Essential Setup Documentation:**
+## 📖 Developer Setup Guides
 
-- **[🔐 Google OAuth Setup](GOOGLE_OAUTH_SETUP.md)** - Authentication configuration
-- **[☁️ Cloud Storage Setup](docs/R2_SETUP.md)** - Cloudflare R2 data storage configuration
-- **[🚀 Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
-- **[⚙️ Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Development environment configuration
+All setup and deployment guides are located in the `docs/` directory:
 
-## 🎯 Use Cases
+- **[Google OAuth Setup](docs/GOOGLE_OAUTH_SETUP.md)** — Authentication configuration
+- **[Cloud Storage Setup](docs/R2_SETUP.md)** — Cloudflare R2 data storage configuration
+- **[Cloudflare D1 Setup](docs/D1_SETUP.md)** — Logging user activity with Cloudflare D1
+- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** — Environment variables and dependencies
+- **[Deployment Guide](docs/DEPLOYMENT.md)** — Deploy to Streamlit Cloud or locally
 
-**Portfolio Risk Management**
-```
-"Show me all loans in Florida with FICO scores below 620"
-→ Geographic + credit risk analysis
-```
 
-**Performance Analytics**
-```
-"What's the delinquency rate by vintage year for California loans?"
-→ Temporal + geographic performance trending
-```
 
-**Concentration Risk**
-```
-"Which states have more than 15% of our portfolio?"
-→ Geographic concentration analysis
-```
+## 💡 Extending Conversational SQL
 
-**Credit Quality Assessment**
-```
-"Compare average DTI and LTV by credit score tier"
-→ Multi-dimensional credit risk profiling
-```
+Conversational SQL is designed for easy adaptation to any tabular dataset. To use it for your own data, simply swap out the ontology and schema files for your domain.
+
+
+## 🎯 Example Use Cases
+
+- **Portfolio Risk Management**: "Show me all loans in Florida with FICO scores below 620"
+- **Performance Analytics**: "What's the delinquency rate by vintage year for California loans?"
+- **Concentration Risk**: "Which states have more than 15% of our portfolio?"
+- **Credit Quality Assessment**: "Compare average DTI and LTV by credit score tier"
 
 ## 🤝 Contributing
 
@@ -204,4 +169,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Built with:** Python • Streamlit • DuckDB • AWS Bedrock • Anthropic Claude • Google OAuth • Cloudflare R2
+**Built with:** Python • Streamlit • DuckDB • AWS Bedrock • Anthropic Claude • Google OAuth • Cloudflare R2 • Cloudflare D1

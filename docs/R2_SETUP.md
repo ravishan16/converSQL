@@ -1,64 +1,72 @@
+
 # Cloudflare R2 Setup Guide
 
-This guide will walk you through setting up Cloudflare R2 for data storage and generating the necessary API keys for the Single Family Loan application.
+This guide provides clear, step-by-step instructions for configuring Cloudflare R2 as the data storage backend for Conversational SQL and its Single Family Loan Analytics implementation.
 
 ## Table of Contents
-- [Prerequisites](#prerequisites)
-- [Step 1: Create R2 Bucket](#step-1-create-r2-bucket)
-- [Step 2: Generate R2 API Tokens](#step-2-generate-r2-api-tokens)
-- [Step 3: Configure Application](#step-3-configure-application)
-- [Step 4: Upload Data](#step-4-upload-data)
-- [Step 5: Test Connection](#step-5-test-connection)
-- [Troubleshooting](#troubleshooting)
+- Prerequisites
+- Create R2 Bucket
+- Generate R2 API Tokens
+- Configure Application
+- Upload Data
+- Test Connection
+- Troubleshooting
 
 ## Prerequisites
 
-- Cloudflare account (free tier available)
-- Data files in Parquet format ready for upload
+- Cloudflare account (free tier is sufficient)
+- Parquet-format data files ready for upload
 
-## Step 1: Create R2 Bucket
+## 1. Create an R2 Bucket
 
-1. **Log into Cloudflare Dashboard**
-   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
-   - Sign in with your account credentials
+1. Log in to your [Cloudflare Dashboard](https://dash.cloudflare.com).
+2. In the sidebar, select **R2 Object Storage**.
+3. Click **Create bucket**.
+4. Enter a bucket name (e.g., `single-family-loan`).
+5. Select a location near your deployment region.
+6. Click **Create bucket** to finish.
 
-2. **Navigate to R2 Object Storage**
-   - In the sidebar, click **"R2 Object Storage"**
-   - Click **"Create bucket"**
+## 2. Generate R2 API Tokens
 
-3. **Configure Bucket**
-   - **Bucket name**: `single-family-loan` (or your preferred name)
-   - **Location**: Choose closest to your deployment region
-   - Click **"Create bucket"**
+1. In the Cloudflare Dashboard, go to **R2 Object Storage**.
+2. Click **Manage R2 API tokens**.
+3. Click **Create API token** and provide a descriptive name (e.g., `single-family-loan-token`).
+4. Set permissions:
+   - `Object:Read` (required)
+   - `Object:List` (required)
+   - `Object:Write` (if you plan to upload via API)
+5. Restrict resources to your account and the specific bucket.
+6. Click **Continue to summary**, review, and then **Create token**.
+7. Copy and save your `Access Key ID` and `Secret Access Key` securely.
 
-## Step 2: Generate R2 API Tokens
+## 3. Configure the Application
 
-### Option A: R2 API Tokens (Recommended)
+Add the following environment variables to your `.env` file:
 
-1. **Navigate to API Tokens**
-   - In Cloudflare Dashboard, go to **"R2 Object Storage"**
-   - Click **"Manage R2 API tokens"**
+```bash
+R2_ENDPOINT_URL=https://<your-account-id>.r2.cloudflarestorage.com
+R2_BUCKET_NAME=single-family-loan
+R2_ACCESS_KEY_ID=<your-access-key>
+R2_SECRET_ACCESS_KEY=<your-secret-key>
+```
 
-2. **Create New Token**
-   - Click **"Create API token"**
-   - Give it a descriptive name: `single-family-loan-token`
+## 4. Upload Data
 
-3. **Set Permissions**
-   - **Permissions**: Select the following:
-     - ✅ `Object:Read` on your bucket
-     - ✅ `Object:List` on your bucket
-     - ✅ `Object:Write` (if you need to upload via API)
+Upload your Parquet data files to the R2 bucket using the Cloudflare dashboard or API tools. Ensure files are named and organized as expected by the application (see data documentation for details).
 
-4. **Set Resource Restrictions**
-   - **Include**: `All accounts` → Your account
-   - **Include**: `All zones` → Specific bucket → `single-family-loan`
+## 5. Test Connection
 
-5. **Generate Token**
-   - Click **"Continue to summary"**
-   - Review permissions and click **"Create token"**
-   - **Important**: Copy and save the following credentials immediately:
-     - `Access Key ID`
-     - `Secret Access Key`
+Start the application and verify that it can access and read data from the R2 bucket. Check logs for any errors related to storage or permissions.
+
+## Troubleshooting
+
+- Double-check your API token permissions and resource restrictions.
+- Ensure your environment variables match your Cloudflare configuration.
+- Review application logs for error messages.
+
+---
+
+For further assistance, consult the official Cloudflare R2 documentation or open an issue in the Conversational SQL repository.
      - `Endpoint URL` (will be in format: `https://[account-id].r2.cloudflarestorage.com`)
 
 ### Option B: Global API Key (Less Secure)
