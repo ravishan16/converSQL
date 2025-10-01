@@ -12,12 +12,20 @@ boto3>=1.34.0
 
 # AI/ML providers
 anthropic>=0.40.0
+google-generativeai>=0.3.0  # For Gemini support
 
 # Authentication (Google OAuth)
 requests>=2.31.0
 
-# Testing
+# Testing and development
 pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+black>=23.0.0
+flake8>=6.1.0
+isort>=5.12.0
+mypy>=1.7.0
+coverage>=7.3.0
 
 # Optional: Enhanced performance and monitoring
 psutil>=5.9.0

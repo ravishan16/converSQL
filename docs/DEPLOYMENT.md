@@ -7,8 +7,8 @@ Simple guide for deploying the NLP to SQL Streamlit application directly from Gi
 ### 1. Local Development
 ```bash
 # Clone repository
-git clone https://github.com/ravishan16/nlptosql.git
-cd nlptosql
+git clone https://github.com/ravishan16/converSQL.git
+cd converSQL
 
 # Install dependencies
 pip install -r requirements.txt
@@ -22,7 +22,7 @@ streamlit run app.py
 ### 2. Streamlit Cloud Deployment
 1. Visit [share.streamlit.io](https://share.streamlit.io)
 2. Connect your GitHub account
-3. Select your repository: `ravishan16/nlptosql`
+3. Select your repository: `ravishan16/converSQL`
 4. Set main file path: `app.py`
 5. Configure environment variables (see below)
 6. Deploy!
@@ -86,7 +86,7 @@ DEMO_MODE=false
 1. **Go to Streamlit Cloud**: Visit [share.streamlit.io](https://share.streamlit.io)
 2. **Sign in**: Use your GitHub account
 3. **New App**: Click "New app"
-4. **Select Repository**: Choose `ravishan16/nlptosql`
+4. **Select Repository**: Choose `ravishan16/converSQL`
 5. **Set Main File**: Enter `app.py`
 6. **Branch**: Select `main` (default)
 7. **Click Deploy**
@@ -219,4 +219,4 @@ echo $CLAUDE_API_KEY
 
 - [Streamlit Cloud Documentation](https://docs.streamlit.io/streamlit-cloud)
 - [Streamlit Community Forum](https://discuss.streamlit.io/)
-- [GitHub Repository](https://github.com/ravishan16/nlptosql)
+- [GitHub Repository](https://github.com/ravishan16/converSQL)
