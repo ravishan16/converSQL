@@ -28,6 +28,7 @@ from src.simple_auth import get_auth_service
 
 # Import authentication
 from src.simple_auth_components import simple_auth_wrapper
+from src.visualization import render_visualization
 
 # Configure page with professional styling
 favicon_path = get_favicon_path()
@@ -360,6 +361,8 @@ def display_results(result_df: pd.DataFrame, title: str, execution_time: float =
         # Use full width for the dataframe with responsive height
         height = min(600, max(200, len(result_df) * 35 + 50))  # Dynamic height based on rows
         st.dataframe(result_df, use_container_width=True, height=height)
+
+        render_visualization(result_df)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
