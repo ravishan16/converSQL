@@ -149,11 +149,7 @@ def render_login_page():
     with col2:
         logo_data_uri = get_logo_data_uri()
         if logo_data_uri:
-            logo_block = (
-                "<div class='login-logo'>"
-                f"<img src='{logo_data_uri}' alt='converSQL logo' />"
-                "</div>"
-            )
+            logo_block = "<div class='login-logo'>" f"<img src='{logo_data_uri}' alt='converSQL logo' />" "</div>"
         else:
             logo_block = "<div class='login-logo login-logo--fallback'>💬 converSQL</div>"
 
@@ -167,11 +163,7 @@ def render_login_page():
                 "</a>"
             )
         else:
-            login_cta = (
-                "<div class='login-button login-button--disabled'>"
-                "❌ Google OAuth unavailable"
-                "</div>"
-            )
+            login_cta = "<div class='login-button login-button--disabled'>" "❌ Google OAuth unavailable" "</div>"
 
         st.markdown(
             f"""
