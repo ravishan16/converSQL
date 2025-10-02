@@ -22,11 +22,11 @@ There are many ways to contribute to converSQL:
 
 ```bash
 # Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/conversql.git
-cd conversql
+git clone https://github.com/YOUR_USERNAME/converSQL.git
+cd converSQL
 
 # Add upstream remote
-git remote add upstream https://github.com/ravishan16/conversql.git
+git remote add upstream https://github.com/ravishan16/converSQL.git
 ```
 
 ### 2. Set Up Development Environment
@@ -82,6 +82,14 @@ black src/ app.py
 # Check with flake8
 flake8 src/ app.py --max-line-length=100
 ```
+
+### Front-end Styling
+
+When updating Streamlit UI components:
+
+- Re-use the CSS custom properties defined in `app.py` (`--color-background`, `--color-accent-primary`, etc.) instead of hard-coded hex values.
+- Mirror changes in `.streamlit/config.toml` when altering primary/secondary colors so the Streamlit theme and custom CSS stay aligned.
+- Include before/after screenshots in your pull request whenever you adjust layout, typography, or palette usage.
 
 **Example:**
 ```python

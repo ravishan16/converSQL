@@ -4,7 +4,7 @@ Implements converSQL adapter interface for Anthropic Claude API.
 """
 
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from .base import AIEngineAdapter
 
@@ -27,10 +27,10 @@ class ClaudeAdapter(AIEngineAdapter):
                 - model: Model name (default from env)
                 - max_tokens: Maximum response tokens
         """
-        self.client = None
-        self.api_key = None
-        self.model = None
-        self.max_tokens = None
+        self.client: Optional[Any] = None
+        self.api_key: Optional[str] = None
+        self.model: Optional[str] = None
+        self.max_tokens: Optional[int] = None
         super().__init__(config)
 
     def _initialize(self) -> None:
@@ -69,7 +69,7 @@ class ClaudeAdapter(AIEngineAdapter):
 
     def is_available(self) -> bool:
         """Check if Claude API client is initialized and ready."""
-        return self.client is not None and self.api_key is not None
+        return self.client is not None and self.api_key is not None and self.model is not None
 
     def generate_sql(self, prompt: str) -> Tuple[str, str]:
         """
@@ -86,9 +86,15 @@ class ClaudeAdapter(AIEngineAdapter):
 
         try:
             # Call Claude API
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
+            client = self.client
+            model = self.model
+            max_tokens = self.max_tokens
+            if client is None or model is None or max_tokens is None:
+                return "", "Claude API not available. Check CLAUDE_API_KEY configuration."
+
+            response = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
                 temperature=0.0,  # Deterministic for SQL generation
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -117,7 +123,7 @@ class ClaudeAdapter(AIEngineAdapter):
             elif "rate" in error_lower or "quota" in error_lower:
                 error_msg += "\nAPI rate limit or quota exceeded"
             elif "model" in error_lower:
-                error_msg += f"\nModel {self.model} may not be available or accessible"
+                error_msg += f"\nModel {model} may not be available or accessible"
 
             return "", error_msg
 

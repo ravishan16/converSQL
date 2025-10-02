@@ -5,7 +5,7 @@ Implements converSQL adapter interface for Amazon Bedrock.
 
 import json
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from .base import AIEngineAdapter
 
@@ -30,11 +30,11 @@ class BedrockAdapter(AIEngineAdapter):
                 - guardrail_id: Optional Bedrock Guardrail ID
                 - guardrail_version: Optional Bedrock Guardrail version
         """
-        self.client = None
-        self.model_id = None
-        self.region = None
-        self.guardrail_id = None
-        self.guardrail_version = None
+        self.client: Optional[Any] = None
+        self.model_id: Optional[str] = None
+        self.region: Optional[str] = None
+        self.guardrail_id: Optional[str] = None
+        self.guardrail_version: Optional[str] = None
         super().__init__(config)
 
     def _initialize(self) -> None:
@@ -135,20 +135,31 @@ class BedrockAdapter(AIEngineAdapter):
             }
 
             # Prepare invoke_model parameters
+            model_id = self.model_id
+            if model_id is None:
+                return "", "Bedrock client not available. Check AWS configuration."
+
             invoke_params = {
-                "modelId": self.model_id,
+                "modelId": model_id,
                 "body": json.dumps(request_body),
                 "contentType": "application/json",
                 "accept": "application/json",
             }
 
             # Add guardrails if configured
-            if self.guardrail_id:
-                invoke_params["guardrailIdentifier"] = self.guardrail_id
-                invoke_params["guardrailVersion"] = self.guardrail_version
+            guardrail_id = self.guardrail_id
+            guardrail_version = self.guardrail_version
+            if guardrail_id is not None:
+                invoke_params["guardrailIdentifier"] = guardrail_id
+                if guardrail_version is not None:
+                    invoke_params["guardrailVersion"] = guardrail_version
 
             # Call Bedrock API
-            response = self.client.invoke_model(**invoke_params)
+            client = self.client
+            if client is None:
+                return "", "Bedrock client not available. Check AWS credentials and configuration."
+
+            response = client.invoke_model(**invoke_params)
 
             # Parse response
             response_body = json.loads(response["body"].read())
@@ -193,7 +204,7 @@ class BedrockAdapter(AIEngineAdapter):
 
     def get_model_info(self) -> Dict[str, Any]:
         """Get Bedrock model configuration details."""
-        info = {
+        info: Dict[str, Any] = {
             "provider": "Amazon Bedrock",
             "model_id": self.model_id,
             "region": self.region,

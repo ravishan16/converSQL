@@ -4,7 +4,7 @@ enableCORS = true
 port = 5000
 
 [theme]
-primaryColor = "#1f77b4"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f2f6"
-textColor = "#262730"
+primaryColor = "#B45F4D"
+backgroundColor = "#FAF6F0"
+secondaryBackgroundColor = "#FDFDFD"
+textColor = "#3A3A3A"

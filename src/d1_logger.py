@@ -5,9 +5,9 @@ Lightweight logging service for user activity and queries.
 """
 
 import os
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
-import requests
+import requests  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,7 +26,7 @@ class D1Logger:
         """Check if D1 logging is enabled."""
         return self.enabled
 
-    def _execute_query(self, sql: str, params: list = None) -> Optional[Dict]:
+    def _execute_query(self, sql: str, params: Optional[List[Any]] = None) -> Optional[Dict[str, Any]]:
         """Execute a D1 query via REST API."""
         if not self.enabled:
             return None
@@ -35,7 +35,7 @@ class D1Logger:
 
         headers = {"Authorization": f"Bearer {self.api_token}", "Content-Type": "application/json"}
 
-        payload = {"sql": sql}
+        payload: Dict[str, Any] = {"sql": sql}
 
         if params:
             payload["params"] = params
@@ -77,7 +77,7 @@ class D1Logger:
 
         self._execute_query(sql, [user_id, email, question, sql_query, ai_provider, execution_time])
 
-    def get_user_stats(self, user_id: str) -> Dict:
+    def get_user_stats(self, user_id: str) -> Dict[str, Any]:
         """Get basic user statistics."""
         if not self.enabled:
             return {}
@@ -98,7 +98,7 @@ class D1Logger:
 
 
 # Global logger instance
-_d1_logger = None
+_d1_logger: Optional[D1Logger] = None
 
 
 def get_d1_logger() -> D1Logger:
