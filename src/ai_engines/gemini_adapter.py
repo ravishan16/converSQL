@@ -4,7 +4,7 @@ Implements converSQL adapter interface for Google Gemini.
 """
 
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 from .base import AIEngineAdapter
 
@@ -28,11 +28,11 @@ class GeminiAdapter(AIEngineAdapter):
                 - max_tokens: Maximum response tokens
                 - temperature: Temperature for generation (0.0-1.0)
         """
-        self.client = None
-        self.model = None
-        self.api_key = None
-        self.max_output_tokens = None
-        self.temperature = None
+        self.client: Optional[Any] = None
+        self.model: Optional[Any] = None
+        self.api_key: Optional[str] = None
+        self.max_output_tokens: int = 4000
+        self.temperature: float = 0.0
         super().__init__(config)
 
     def _initialize(self) -> None:
@@ -40,31 +40,49 @@ class GeminiAdapter(AIEngineAdapter):
         # Get configuration
         self.api_key = self.config.get("api_key", os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
         model_name = self.config.get("model", os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
-        self.max_output_tokens = self.config.get("max_output_tokens", 4000)
-        self.temperature = self.config.get("temperature", 0.0)
+        if not isinstance(model_name, str) or not model_name.strip():
+            model_name = "gemini-1.5-pro"
+        max_output_tokens = self.config.get("max_output_tokens", 4000)
+        try:
+            parsed_max_tokens = int(max_output_tokens)
+            self.max_output_tokens = parsed_max_tokens if parsed_max_tokens > 0 else 4000
+        except (TypeError, ValueError):
+            self.max_output_tokens = 4000
+
+        temperature_config = self.config.get("temperature", 0.0)
+        try:
+            parsed_temperature = float(temperature_config)
+            self.temperature = parsed_temperature if 0.0 <= parsed_temperature <= 1.0 else 0.0
+        except (TypeError, ValueError):
+            self.temperature = 0.0
 
         if not self.api_key:
             return
 
         try:
-            import google.generativeai as genai
+            import importlib
+
+            genai = cast(Any, importlib.import_module("google.generativeai"))
 
             # Configure API key
             genai.configure(api_key=self.api_key)
 
             # Initialize model with generation config
-            generation_config = {
+            generation_config: Dict[str, Any] = {
                 "temperature": self.temperature,
                 "max_output_tokens": self.max_output_tokens,
                 "top_p": 0.95,
                 "top_k": 40,
             }
 
-            self.model = genai.GenerativeModel(model_name=model_name, generation_config=generation_config)
+            model_instance = cast(
+                Any, genai.GenerativeModel(model_name=str(model_name), generation_config=cast(Any, generation_config))
+            )
+            self.model = model_instance
 
             # Optional: Test with minimal request to verify model initialization
             try:
-                self.model.generate_content("test")
+                model_instance.generate_content("test")
                 # If we get here, the model is working
             except Exception:
                 # Keep model - might work for actual requests
@@ -98,7 +116,11 @@ class GeminiAdapter(AIEngineAdapter):
 
         try:
             # Generate content
-            response = self.model.generate_content(prompt)
+            model = self.model
+            if model is None:
+                return "", "Gemini not available. Check GOOGLE_API_KEY configuration."
+
+            response = model.generate_content(prompt)
 
             # Extract text from response
             if response.text:
@@ -178,25 +200,33 @@ class GeminiAdapter(AIEngineAdapter):
                     'HARM_CATEGORY_HATE_SPEECH': 'BLOCK_MEDIUM_AND_ABOVE',
                 }
         """
-        if not self.model:
+        model = self.model
+        if model is None:
             print("⚠️ Cannot set safety settings: Model not initialized")
             return
 
         try:
-            import google.generativeai as genai
+            import importlib
+
+            genai = cast(Any, importlib.import_module("google.generativeai"))
 
             # Reconstruct model with new safety settings
-            generation_config = {
+            generation_config: Dict[str, Any] = {
                 "temperature": self.temperature,
                 "max_output_tokens": self.max_output_tokens,
                 "top_p": 0.95,
                 "top_k": 40,
             }
 
-            model_name = self.model.model_name if hasattr(self.model, "model_name") else "gemini-1.5-pro"
+            model_name = model.model_name if hasattr(model, "model_name") else "gemini-1.5-pro"
 
-            self.model = genai.GenerativeModel(
-                model_name=model_name, generation_config=generation_config, safety_settings=safety_settings
+            self.model = cast(
+                Any,
+                genai.GenerativeModel(
+                    model_name=str(model_name),
+                    generation_config=cast(Any, generation_config),
+                    safety_settings=safety_settings,
+                ),
             )
 
         except Exception as e:

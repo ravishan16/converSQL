@@ -1,5 +1,9 @@
 # AI Engine Development Guide
 
+<p align="center">
+    <img src="../assets/conversql_logo.svg" alt="converSQL logo" width="320" />
+</p>
+
 ## Overview
 
 converSQL uses a modular **adapter pattern** for AI engine integration, making it easy to add support for new AI providers. This guide walks you through creating a new AI engine adapter from scratch.

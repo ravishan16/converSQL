@@ -6,7 +6,7 @@ Enhanced with caching, AI service integration, and R2 support.
 
 import glob
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import duckdb
 import pandas as pd
@@ -61,10 +61,10 @@ def sync_data_if_needed(force: bool = False) -> bool:
                     conn = duckdb.connect()
                     # Quick validation - try to read first file
                     test_query = f"SELECT COUNT(*) FROM '{parquet_files[0]}'"
-                    result = conn.execute(test_query).fetchone()
+                    row = conn.execute(test_query).fetchone()
                     conn.close()
 
-                    if result and result[0] > 0:
+                    if row and row[0] > 0:
                         print(f"✅ Found {len(parquet_files)} valid parquet file(s) with data")
                         return True
                     else:
@@ -84,15 +84,15 @@ def sync_data_if_needed(force: bool = False) -> bool:
         if force:
             sync_args.append("--force")
 
-        result = subprocess.run(sync_args, capture_output=True, text=True)
+        sync_result = subprocess.run(sync_args, capture_output=True, text=True)
 
-        if result.returncode == 0:
+        if sync_result.returncode == 0:
             print("✅ R2 sync completed successfully")
             return True
         else:
-            print(f"⚠️  R2 sync failed: {result.stderr}")
-            if result.stdout:
-                print(f"📋 Sync output: {result.stdout}")
+            print(f"⚠️  R2 sync failed: {sync_result.stderr}")
+            if sync_result.stdout:
+                print(f"📋 Sync output: {sync_result.stdout}")
             return False
 
     except Exception as e:
@@ -148,7 +148,8 @@ def initialize_ai_client() -> Tuple[Optional[object], str]:
     """Initialize AI client - uses new AI service."""
     service = get_ai_service()
     if service.is_available():
-        return service, service.get_active_provider()
+        provider = service.get_active_provider() or "none"
+        return service, provider
     return None, "none"
 
 
@@ -193,7 +194,7 @@ def get_analyst_questions() -> Dict[str, str]:
     }
 
 
-def get_ai_service_status() -> Dict[str, any]:
+def get_ai_service_status() -> Dict[str, Any]:
     """Get AI service status for UI display."""
     service = get_ai_service()
     return {

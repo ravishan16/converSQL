@@ -14,6 +14,7 @@ import streamlit as st
 
 # Import AI service with new adapter pattern
 from src.ai_service import generate_sql_with_ai, get_ai_service
+from src.branding import get_favicon_path, get_logo_data_uri
 
 # Import core functionality
 from src.core import (
@@ -29,9 +30,11 @@ from src.simple_auth import get_auth_service
 from src.simple_auth_components import simple_auth_wrapper
 
 # Configure page with professional styling
+favicon_path = get_favicon_path()
+
 st.set_page_config(
     page_title="converSQL - Natural Language to SQL",
-    page_icon="💬",
+    page_icon=str(favicon_path) if favicon_path else "💬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -40,56 +43,266 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-.main .block-container {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+:root {
+    --color-background: #FAF6F0;
+    --color-background-alt: #FDFDFD;
+    --color-text-primary: #3A3A3A;
+    --color-text-secondary: #7C6F64;
+    --color-accent-primary: #DDBEA9;
+    --color-accent-primary-darker: #B45F4D;
+    --color-border-light: #E4C590;
+    --color-tag-bg: #E4C590;
+    --color-tag-text: #3A3A3A;
+    --color-footer-bg: #FAF6F0;
+    --color-footer-text: #7C6F64;
+    --color-footer-link-hover: #DDBEA9;
+    --color-success-bg: #F4E8DC;
+    --color-success-border: #E4C590;
+    --color-success-text: #3A3A3A;
+    --color-warning-bg: #F9E7CE;
+    --color-warning-border: #E4C590;
+    --color-warning-text: #7C6F64;
 }
+
+body {
+    background: var(--color-background);
+    color: var(--color-text-secondary);
+}
+
+.main .block-container {
+    padding: 2.5rem 3.25rem 3.5rem 3.25rem;
+    background: var(--color-background);
+    max-width: 1360px;
+    margin: 0 auto;
+}
+
 .stTabs [data-baseweb="tab-list"] {
     gap: 0.5rem;
     background: none;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border-light);
 }
+
 .stTabs [data-baseweb="tab"] {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid #dee2e6;
+    background: linear-gradient(160deg, var(--color-background-alt) 0%, var(--color-background) 100%);
+    border: 1px solid var(--color-border-light);
     border-radius: 8px 8px 0 0;
-    color: #495057;
+    color: var(--color-text-secondary);
     font-weight: 500;
     padding: 0.75rem 1.5rem;
     margin: 0 0.25rem;
     border-bottom: none;
 }
+
 .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-    color: white;
-    border-color: #007bff;
-    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+    background: linear-gradient(150deg, var(--color-accent-primary) 0%, var(--color-accent-primary-darker) 100%);
+    color: var(--color-background-alt);
+    border-color: var(--color-accent-primary-darker);
+    box-shadow: 0 4px 12px rgba(180, 95, 77, 0.25);
 }
+
 .metric-card {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background-color: var(--color-background-alt);
+    border: 1px solid var(--color-border-light);
     border-radius: 0.5rem;
     padding: 1rem;
 }
-.stSelectbox > div > div {
-    border-radius: 0.5rem;
-}
+
+.stSelectbox > div > div,
 .stTextArea > div > div {
     border-radius: 0.5rem;
+    border-color: var(--color-border-light) !important;
 }
+
 .stButton > button {
     border-radius: 0.5rem;
     font-weight: 500;
+    background: var(--color-accent-primary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-accent-primary-darker);
 }
+
+.stButton > button:hover {
+    background: var(--color-accent-primary-darker);
+    color: var(--color-background-alt);
+}
+
 .stSuccess {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
+    background-color: var(--color-success-bg);
+    border-color: var(--color-success-border);
+    color: var(--color-success-text);
 }
+
 .stWarning {
-    background-color: #fff3cd;
-    border-color: #ffeaa7;
-    color: #856404;
+    background-color: var(--color-warning-bg);
+    border-color: var(--color-warning-border);
+    color: var(--color-warning-text);
+}
+
+div[data-testid="stDataFrame"],
+div[data-testid="stDataFrame"] > div,
+div[data-testid="stDataFrame"] [data-testid="stVerticalBlock"],
+div[data-testid="stDataFrame"] [data-testid="stHorizontalBlock"],
+div[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+div[data-testid="stDataFrame"] table {
+    width: 100% !important;
+}
+
+div[data-testid="stDataFrame"] [data-testid="StyledDataFrame"] {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.footer-links {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.footer-links a {
+    color: var(--color-accent-primary-darker);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.footer-links a:hover {
+    color: var(--color-footer-link-hover);
+}
+
+.brand-logo {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 2.5rem auto;
+    max-width: 640px;
+    padding: 0.5rem 1rem 0 1rem;
+}
+
+.brand-logo img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 18px 36px rgba(180, 95, 77, 0.22));
+}
+
+
+.sidebar-logo {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 1.25rem 0;
+    padding: 0.35rem 0.75rem 0 0.75rem;
+}
+
+.sidebar-logo img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 12px 24px rgba(180, 95, 77, 0.18));
+}
+
+
+.sidebar-hero {
+    margin: 0 0 1.5rem 0;
+    padding: 1.35rem 1.2rem 1.4rem 1.2rem;
+    background: var(--color-background-alt);
+    border: 1px solid var(--color-border-light);
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(180, 95, 77, 0.12);
+}
+
+.sidebar-hero__eyebrow {
+    display: block;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    margin-bottom: 0.55rem;
+}
+
+.sidebar-hero__title {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 1.35rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.sidebar-hero__subhead {
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.4;
+    margin: 0 0 0.75rem 0;
+}
+
+.sidebar-hero__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.95rem;
+    border-radius: 999px;
+    background: rgba(221, 190, 169, 0.18);
+    border: 1px solid rgba(221, 190, 169, 0.45);
+    font-weight: 500;
+}
+
+.sidebar-hero__pill-label {
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.65rem;
+}
+
+.sidebar-hero__pill-value {
+    color: var(--color-accent-primary-darker);
+    font-weight: 600;
+}
+
+.section-card {
+    background: var(--color-background-alt);
+    border: 1px solid var(--color-border-light);
+    border-radius: 22px;
+    padding: 2.25rem 2.15rem 2rem 2.15rem;
+    box-shadow: 0 22px 46px rgba(180, 95, 77, 0.14);
+    margin-bottom: 2.75rem;
+}
+
+.section-card__header h3 {
+    color: var(--color-text-primary);
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+
+.section-card__header p {
+    color: var(--color-text-secondary);
+    font-size: 0.97rem;
+    margin: 0;
+}
+
+.text-label {
+    display: block;
+    margin: 1.5rem 0 0.4rem 0;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.section-spacer {
+    height: 2rem;
+}
+
+.results-card {
+    background: var(--color-background-alt);
+    border: 1px solid var(--color-border-light);
+    border-radius: 22px;
+    padding: 2rem 2.25rem 2.5rem 2.25rem;
+    box-shadow: 0 22px 46px rgba(180, 95, 77, 0.12);
+    margin: 2rem 0 3rem 0;
+}
+.results-card div[data-testid="stDataFrame"] {
+    padding-top: 0.5rem;
 }
 </style>
 """,
@@ -116,6 +329,7 @@ def format_file_size(size_bytes: int) -> str:
 def display_results(result_df: pd.DataFrame, title: str, execution_time: float = None):
     """Display query results with download option and performance metrics."""
     if not result_df.empty:
+        st.markdown("<div class='results-card'>", unsafe_allow_html=True)
         # Compact performance header
         performance_info = f"✅ {title}: {len(result_df):,} rows"
         if execution_time:
@@ -145,7 +359,9 @@ def display_results(result_df: pd.DataFrame, title: str, execution_time: float =
 
         # Use full width for the dataframe with responsive height
         height = min(600, max(200, len(result_df) * 35 + 50))  # Dynamic height based on rows
-        st.dataframe(result_df, width="stretch", height=height)
+        st.dataframe(result_df, use_container_width=True, height=height)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     else:
         st.warning("⚠️ No results found")
@@ -207,31 +423,27 @@ def main():
         st.error("❌ No data files found. Please ensure Parquet files are in the data/processed/ directory.")
         return
 
+    logo_data_uri = get_logo_data_uri()
+
     # Professional sidebar with enhanced styling
     with st.sidebar:
-        # Header with better styling
-        st.markdown(
-            """
-        <div style='text-align: center; padding: 1rem 0; margin-bottom: 1rem;
-                    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                    border-radius: 8px; border: 1px solid #dee2e6;'>
-            <h3 style='color: #495057; margin: 0; font-weight: 400;'>📊 System Status</h3>
+        if logo_data_uri:
+            st.markdown(
+                f"""
+        <div class='sidebar-logo'>
+            <img src='{logo_data_uri}' alt='converSQL logo' />
         </div>
         """,
-            unsafe_allow_html=True,
-        )
+                unsafe_allow_html=True,
+            )
 
-        # Data overview with metrics styling
-        parquet_files = st.session_state.get("parquet_files", [])
         st.markdown(
             """
-        <div style='margin-bottom: 0.5rem;'>
-            <span style='color: #6c757d; font-size: 0.9rem; font-weight: 500;'>Data Files:</span>
-            <span style='color: #28a745; font-weight: 600; margin-left: 0.5rem;'>{}</span>
+        <div class='sidebar-hero'>
+            <span class='sidebar-hero__pill-label'>Dataset</span>
+            <span class='sidebar-hero__pill-value'>🏠 Single Family Loan Analytics</span>
         </div>
-        """.format(
-                len(parquet_files)
-            ),
+        """,
             unsafe_allow_html=True,
         )
 
@@ -244,9 +456,9 @@ def main():
             provider_name = ai_status["active_provider"].title()
             st.markdown(
                 """
-            <div style='background-color: #d4edda; border: 1px solid #c3e6cb;
+            <div style='background-color: var(--color-success-bg); border: 1px solid var(--color-success-border);
                         border-radius: 6px; padding: 0.75rem; margin: 0.5rem 0;'>
-                <div style='color: #155724; font-weight: 500;'>
+                <div style='color: var(--color-success-text); font-weight: 500;'>
                     🤖 AI Assistant: {}
                 </div>
             </div>
@@ -303,12 +515,12 @@ def main():
         else:
             st.markdown(
                 """
-            <div style='background-color: #fff3cd; border: 1px solid #ffeaa7;
+            <div style='background-color: var(--color-warning-bg); border: 1px solid var(--color-warning-border);
                         border-radius: 6px; padding: 0.75rem; margin: 0.5rem 0;'>
-                <div style='color: #856404; font-weight: 500;'>
+                <div style='color: var(--color-warning-text); font-weight: 500;'>
                     🤖 AI Assistant: Unavailable
                 </div>
-                <div style='color: #856404; font-size: 0.85rem; margin-top: 0.25rem;'>
+                <div style='color: var(--color-warning-text); font-size: 0.85rem; margin-top: 0.25rem;'>
                     Configure Claude API or Bedrock access
                 </div>
             </div>
@@ -320,9 +532,9 @@ def main():
         if DEMO_MODE:
             st.markdown(
                 """
-            <div style='background-color: #cce5ff; border: 1px solid #b3d7ff;
+            <div style='background-color: var(--color-background-alt); border: 1px solid var(--color-border-light);
                         border-radius: 6px; padding: 0.5rem; margin: 0.5rem 0;'>
-                <div style='color: #004085; font-size: 0.9rem; font-weight: 500;'>
+                <div style='color: var(--color-text-primary); font-size: 0.9rem; font-weight: 500;'>
                     🧪 Demo Mode Active
                 </div>
             </div>
@@ -367,7 +579,7 @@ def main():
                 st.markdown(f"- **Enable Auth**: {os.getenv('ENABLE_AUTH', 'true')}")
 
         st.markdown(
-            "<div style='margin: 1rem 0; border-bottom: 1px solid #e9ecef;'></div>",
+            "<div style='margin: 1rem 0; border-bottom: 1px solid var(--color-border-light);'></div>",
             unsafe_allow_html=True,
         )
 
@@ -378,12 +590,12 @@ def main():
                 for file_path in parquet_files:
                     table_name = os.path.splitext(os.path.basename(file_path))[0]
                     st.markdown(
-                        f"<div style='color: #495057; margin: 0.25rem 0;'>• <span style='font-weight: 500;'>{table_name}</span></div>",
+                        f"<div style='color: var(--color-text-primary); margin: 0.25rem 0;'>• <span style='font-weight: 500;'>{table_name}</span></div>",
                         unsafe_allow_html=True,
                     )
             else:
                 st.markdown(
-                    "<div style='color: #6c757d; font-style: italic;'>No tables loaded</div>",
+                    "<div style='color: var(--color-text-secondary); font-style: italic;'>No tables loaded</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -391,7 +603,7 @@ def main():
         with st.expander("📈 Portfolio Overview", expanded=True):
             if st.session_state.parquet_files:
                 try:
-                    import duckdb
+                    import duckdb  # type: ignore[import-not-found]
 
                     # Use in-memory connection for stats only
                     with duckdb.connect() as conn:
@@ -426,32 +638,9 @@ def main():
                     )
             else:
                 st.markdown(
-                    "<div style='color: #6c757d; font-style: italic; text-align: center; padding: 1rem;'>No data loaded</div>",
+                    "<div style='color: var(--color-text-secondary); font-style: italic; text-align: center; padding: 1rem;'>No data loaded</div>",
                     unsafe_allow_html=True,
                 )
-
-    # Professional header with subtle styling
-    st.markdown(
-        """
-    <div style='text-align: center; padding: 1rem 0 2rem 0;'>
-        <h1 style='color: #2c3e50; margin-bottom: 0.5rem; font-weight: 300;'>
-            💬 converSQL
-        </h1>
-        <p style='color: #6c757d; font-size: 1.1rem; margin: 0;'>
-            Natural Language to SQL Query Generation
-        </p>
-        <p style='color: #95a5a6; font-size: 0.95rem; margin: 0.25rem 0 0 0;'>
-            Multi-Provider AI Intelligence
-        </p>
-        <div style='margin-top: 1rem; padding: 0.75rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                    border-radius: 8px; border: 1px solid #dee2e6; display: inline-block;'>
-            <span style='color: #495057; font-weight: 500;'>Dataset:</span>
-            <span style='color: #007bff; font-weight: 600; margin-left: 0.5rem;'>🏠 Single Family Loan Analytics</span>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
 
     # Enhanced tab layout with ontology exploration
     tab1, tab2, tab3 = st.tabs(["🔍 Query Builder", "🗺️ Data Ontology", "🔧 Advanced"])
@@ -461,14 +650,11 @@ def main():
     with tab1:
         st.markdown(
             """
-        <div style='margin-bottom: 1.5rem;'>
-            <h3 style='color: #495057; font-weight: 400; margin-bottom: 0.5rem;'>
-                Ask Questions About Your Loan Data
-            </h3>
-            <p style='color: #6c757d; margin: 0; font-size: 0.95rem;'>
-                Use natural language to query your loan portfolio data
-            </p>
-        </div>
+        <div class='section-card'>
+            <div class='section-card__header'>
+                <h3>Ask Questions About Your Loan Data</h3>
+                <p>Use natural language to query your loan portfolio data.</p>
+            </div>
         """,
             unsafe_allow_html=True,
         )
@@ -476,26 +662,23 @@ def main():
         # More compact analyst question dropdown
         analyst_questions = get_analyst_questions()
 
-        col1, col2 = st.columns([4, 1])
-        with col1:
+        query_col1, query_col2 = st.columns([4, 1], gap="medium")
+        with query_col1:
             selected_question = st.selectbox(
                 "💡 **Common Questions:**",
                 [""] + list(analyst_questions.keys()),
                 help="Select a pre-defined question",
             )
 
-        with col2:
-            st.write("")  # Add spacing to align button
-            if st.button("🎯 Use", disabled=not selected_question):
+        with query_col2:
+            st.write("")
+            if st.button("🎯 Use", disabled=not selected_question, use_container_width=True):
                 if selected_question in analyst_questions:
                     st.session_state.user_question = analyst_questions[selected_question]
                     st.rerun()
 
         # Professional question input with better styling
-        st.markdown(
-            "<div style='margin: 1.5rem 0 0.5rem 0;'><label style='font-weight: 500; color: #495057;'>💭 Your Question:</label></div>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<label class='text-label'>💭 Your Question:</label>", unsafe_allow_html=True)
         user_question = st.text_area(
             "Your Question",
             value=st.session_state.get("user_question", ""),
@@ -522,7 +705,7 @@ def main():
         generate_button = st.button(
             f"🤖 Generate SQL with {provider_name}",
             type="primary",
-            width="stretch",
+            use_container_width=True,
             disabled=not is_ai_ready,
             help="Enter a question above to generate SQL" if not is_ai_ready else None,
         )
@@ -569,7 +752,7 @@ def main():
             execute_button = st.button(
                 "✅ Execute Query",
                 type="primary",
-                width="stretch",
+                use_container_width=True,
                 disabled=not has_sql,
                 help="Generate SQL first to execute" if not has_sql else None,
             )
@@ -590,7 +773,7 @@ def main():
         with col2:
             edit_button = st.button(
                 "✏️ Edit",
-                width="stretch",
+                use_container_width=True,
                 disabled=not has_sql,
                 help="Generate SQL first to edit" if not has_sql else None,
             )
@@ -609,7 +792,7 @@ def main():
 
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    if st.button("🚀 Run Edited Query", type="primary", width="stretch"):
+                    if st.button("🚀 Run Edited Query", type="primary", use_container_width=True):
                         with st.spinner("⚡ Running edited query..."):
                             try:
                                 start_time = time.time()
@@ -623,18 +806,20 @@ def main():
                                 st.error(f"❌ Query execution failed: {str(e)}")
                                 st.info("💡 Check your SQL syntax and try again")
                 with col2:
-                    if st.button("❌ Cancel", width="stretch"):
+                    if st.button("❌ Cancel", use_container_width=True):
                         st.session_state.show_edit_sql = False
                         st.rerun()
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with tab2:
         st.markdown(
             """
         <div style='margin-bottom: 1.5rem;'>
-            <h3 style='color: #495057; font-weight: 400; margin-bottom: 0.5rem;'>
+            <h3 style='color: var(--color-text-primary); font-weight: 400; margin-bottom: 0.5rem;'>
                 🗺️ Data Ontology Explorer
             </h3>
-            <p style='color: #6c757d; margin: 0; font-size: 0.95rem;'>
+            <p style='color: var(--color-text-secondary); margin: 0; font-size: 0.95rem;'>
                 Explore the structured organization of all 110+ data fields across 15 business domains
             </p>
         </div>
@@ -657,8 +842,10 @@ def main():
         #     st.metric(
         #         label="📅 Data Vintage",
         #         value=PORTFOLIO_CONTEXT['overview']['vintage_range']
+
+        st.markdown("<div class='section-spacer'></div>", unsafe_allow_html=True)
         #     )
-        # with col3:
+        st.markdown("---")
         #     st.metric(
         #         label="🎯 Loss Rate",
         #         value=PORTFOLIO_CONTEXT['performance_summary']['lifetime_loss_rate']
@@ -683,7 +870,7 @@ def main():
             # Domain header
             st.markdown(
                 f"""
-            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            <div style='background: linear-gradient(135deg, var(--color-accent-primary) 0%, var(--color-accent-primary-darker) 100%);
                         padding: 1.5rem; border-radius: 10px; margin: 1rem 0;'>
                 <h4 style='color: white; margin: 0; font-weight: 500;'>
                     {selected_domain.replace('_', ' ').title()}
@@ -745,8 +932,8 @@ def main():
                 # Field details card
                 st.markdown(
                     f"""
-                <div style='background: #f8f9fa; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #007bff;'>
-                    <h5 style='color: #495057; margin-top: 0;'>{selected_field}</h5>
+                <div style='background: var(--color-background-alt); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--color-accent-primary-darker);'>
+                    <h5 style='color: var(--color-text-primary); margin-top: 0;'>{selected_field}</h5>
                     <p><strong>Domain:</strong> {field_meta.domain}</p>
                     <p><strong>Data Type:</strong> <code>{field_meta.data_type}</code></p>
                     <p><strong>Description:</strong> {field_meta.description}</p>
@@ -774,7 +961,7 @@ def main():
         st.markdown("### ⚖️ Risk Assessment Framework")
         st.markdown(
             f"""
-        <div style='background: #fff3cd; padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107;'>
+        <div style='background: var(--color-warning-bg); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--color-accent-primary-darker); border: 1px solid var(--color-border-light); color: var(--color-warning-text);'>
             <p><strong>Credit Triangle:</strong> {PORTFOLIO_CONTEXT['risk_framework']['credit_triangle']}</p>
             <ul>
                 <li><strong>Super Prime:</strong> {PORTFOLIO_CONTEXT['risk_framework']['risk_tiers']['super_prime']}</li>
@@ -790,10 +977,10 @@ def main():
         st.markdown(
             """
         <div style='margin-bottom: 1.5rem;'>
-            <h3 style='color: #495057; font-weight: 400; margin-bottom: 0.5rem;'>
+            <h3 style='color: var(--color-text-primary); font-weight: 400; margin-bottom: 0.5rem;'>
                 🔧 Advanced Options
             </h3>
-            <p style='color: #6c757d; margin: 0; font-size: 0.95rem;'>
+            <p style='color: var(--color-text-secondary); margin: 0; font-size: 0.95rem;'>
                 Manual SQL queries and database schema exploration
             </p>
         </div>
@@ -871,20 +1058,20 @@ def main():
 
                             # Create colored cards for each domain
                             colors = [
-                                "#3498db",
-                                "#e74c3c",
-                                "#f39c12",
-                                "#2ecc71",
-                                "#9b59b6",
+                                "#F3E5D9",
+                                "#E7C8B2",
+                                "#F6EDE2",
+                                "#E4C590",
+                                "#ECD9C7",
                             ]
                             color = colors[i // 3 % len(colors)]
 
                             st.markdown(
                                 f"""
-                            <div style='background: {color}; color: white; padding: 1rem;
-                                        border-radius: 8px; margin-bottom: 0.5rem; text-align: center;'>
+                            <div style='background: {color}; color: var(--color-text-primary); padding: 1rem;
+                                        border-radius: 8px; margin-bottom: 0.5rem; text-align: center; border: 1px solid var(--color-border-light);'>
                                 <h5 style='margin: 0; font-size: 0.9rem;'>{domain_name.replace('_', ' ').title()}</h5>
-                                <p style='margin: 0.25rem 0 0 0; font-size: 0.8rem; opacity: 0.9;'>
+                                <p style='margin: 0.25rem 0 0 0; font-size: 0.8rem; opacity: 0.85;'>
                                     {field_count} fields
                                 </p>
                             </div>
@@ -977,17 +1164,22 @@ def main():
 
     st.markdown(
         f"""
-    <div style='background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                border-top: 1px solid #dee2e6; padding: 2rem; margin-top: 2rem;
+    <div style='background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background-alt) 100%);
+                border-top: 1px solid var(--color-border-light); padding: 2rem; margin-top: 2rem;
                 text-align: center; border-radius: 0 0 8px 8px;'>
-        <div style='color: #495057; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
+        <div style='color: var(--color-text-primary); font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
             💬 converSQL - Natural Language to SQL Query Generation Platform
         </div>
-        <div style='color: #6c757d; font-size: 0.8rem; line-height: 1.4;'>
+        <div style='color: var(--color-text-secondary); font-size: 0.8rem; line-height: 1.4;'>
             Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>{ai_provider_text}</strong> • <strong>Ontological Data Intelligence</strong><br>
             <span style='font-size: 0.75rem; opacity: 0.8;'>
                 Implementation Showcase: Single Family Loan Analytics
             </span>
+        </div>
+        <div class='footer-links'>
+            <a href='https://github.com/ravishan16/converSQL' target='_blank' rel='noopener noreferrer'>GitHub Repository</a>
+            <a href='https://github.com/ravishan16/converSQL/issues' target='_blank' rel='noopener noreferrer'>Issue Tracker</a>
+            <a href='https://github.com/ravishan16/converSQL/pulls' target='_blank' rel='noopener noreferrer'>Pull Requests</a>
         </div>
     </div>
     """,

@@ -1,5 +1,9 @@
 # converSQL Architecture
 
+<p align="center">
+    <img src="../assets/conversql_logo.svg" alt="converSQL logo" width="320" />
+</p>
+
 ## Overview
 
 converSQL follows a **clean, layered architecture** designed for modularity, extensibility, and maintainability. This document provides a deep dive into the system design, component interactions, and architectural decisions.
