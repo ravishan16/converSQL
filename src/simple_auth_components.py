@@ -9,6 +9,7 @@ import os
 import streamlit as st
 
 from .branding import get_logo_data_uri
+from .core import get_ai_service_status
 from .simple_auth import get_auth_service, handle_oauth_callback
 
 
@@ -20,6 +21,35 @@ def render_login_page():
     st.markdown(
         """
     <style>
+    :root {
+        --color-background: #FAF6F0;
+        --color-background-alt: #FDFDFD;
+        --color-text-primary: #3A3A3A;
+        --color-text-secondary: #7C6F64;
+        --color-accent-primary: #DDBEA9;
+        --color-accent-primary-darker: #B45F4D;
+        --color-border-light: #E4C590;
+    }
+
+    .footer-links {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .footer-links a {
+        color: var(--color-accent-primary-darker);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .footer-links a:hover {
+        color: #d89c7f;
+    }
+
     .login-wrapper {
         max-width: 560px;
         margin: 0 auto;
@@ -132,12 +162,6 @@ def render_login_page():
         border-bottom: 1px solid rgba(228, 197, 144, 0.5);
     }
 
-    .login-footer {
-        text-align: center;
-        color: var(--color-text-secondary, #7C6F64);
-        font-size: 0.8rem;
-        opacity: 0.85;
-    }
     </style>
     """,
         unsafe_allow_html=True,
@@ -211,10 +235,41 @@ def render_login_page():
             """
             )
 
-        # Footer
+        # Footer matching main app styling
+        ai_status = get_ai_service_status()
+        if ai_status.get("available"):
+            provider = ai_status.get("active_provider", "ai_assistant")
+            if provider == "claude":
+                ai_provider_text = "Claude API (Anthropic)"
+            elif provider == "bedrock":
+                ai_provider_text = "Amazon Bedrock"
+            else:
+                ai_provider_text = provider.replace("_", " ").title()
+        else:
+            ai_provider_text = "Manual Analysis Mode"
+
         st.markdown("---")
         st.markdown(
-            "<div class='login-footer'>Powered by Streamlit · DuckDB · Anthropic & AWS integrations</div>",
+            f"""
+        <div style='background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background-alt) 100%);
+                    border-top: 1px solid var(--color-border-light); padding: 2rem; margin-top: 2rem;
+                    text-align: center; border-radius: 0 0 8px 8px;'>
+            <div style='color: var(--color-text-primary); font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
+                💬 converSQL - Natural Language to SQL Query Generation Platform
+            </div>
+            <div style='color: var(--color-text-secondary); font-size: 0.8rem; line-height: 1.4;'>
+                Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>{ai_provider_text}</strong> • <strong>Ontological Data Intelligence</strong><br>
+                <span style='font-size: 0.75rem; opacity: 0.8;'>
+                    Implementation Showcase: Single Family Loan Analytics
+                </span>
+            </div>
+            <div class='footer-links'>
+                <a href='https://github.com/ravishan16/converSQL' target='_blank' rel='noopener noreferrer'>GitHub Repository</a>
+                <a href='https://github.com/ravishan16/converSQL/issues' target='_blank' rel='noopener noreferrer'>Issue Tracker</a>
+                <a href='https://github.com/ravishan16/converSQL/pulls' target='_blank' rel='noopener noreferrer'>Pull Requests</a>
+            </div>
+        </div>
+        """,
             unsafe_allow_html=True,
         )
 
@@ -229,16 +284,6 @@ def render_user_menu():
 
     with st.sidebar:
         st.markdown("---")
-
-        # User profile section
-        st.markdown(
-            """
-        <div style='margin: 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #e9ecef;'>
-            <h4 style='color: #495057; font-weight: 500; margin: 0;'>👤 Profile</h4>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
 
         # User info
         st.markdown(
@@ -285,7 +330,8 @@ def simple_auth_wrapper(main_app_function):
             return
 
         # User is authenticated - show the main app
+        result = main_app_function()
         render_user_menu()
-        return main_app_function()
+        return result
 
     return wrapper

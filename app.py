@@ -192,64 +192,73 @@ div[data-testid="stDataFrame"] [data-testid="StyledDataFrame"] {
 }
 
 
-.hero-section {
-    text-align: center;
-    max-width: 960px;
-    margin: 0 auto 3.25rem auto;
-    padding: 2rem 2.75rem 2.25rem 2.75rem;
-    background: linear-gradient(155deg, rgba(253, 253, 253, 0.9) 0%, rgba(250, 246, 240, 0.9) 100%);
-    border-radius: 28px;
-    border: 1px solid rgba(228, 197, 144, 0.6);
-    box-shadow: 0 24px 48px rgba(180, 95, 77, 0.16);
+.sidebar-logo {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 1.25rem 0;
+    padding: 0.35rem 0.75rem 0 0.75rem;
 }
 
-.hero-section .hero-eyebrow {
+.sidebar-logo img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 12px 24px rgba(180, 95, 77, 0.18));
+}
+
+
+.sidebar-hero {
+    margin: 0 0 1.5rem 0;
+    padding: 1.35rem 1.2rem 1.4rem 1.2rem;
+    background: var(--color-background-alt);
+    border: 1px solid var(--color-border-light);
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(180, 95, 77, 0.12);
+}
+
+.sidebar-hero__eyebrow {
+    display: block;
     color: var(--color-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.28em;
-    font-size: 0.75rem;
-    margin-bottom: 1.25rem;
-    display: inline-block;
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    margin-bottom: 0.55rem;
 }
 
-.hero-section h1 {
+.sidebar-hero__title {
     color: var(--color-text-primary);
-    margin-bottom: 1rem;
-    font-weight: 300;
-    font-size: 2.35rem;
-    letter-spacing: 0.01em;
+    font-weight: 500;
+    font-size: 1.35rem;
+    margin: 0 0 0.5rem 0;
 }
 
-.hero-section .hero-subhead {
+.sidebar-hero__subhead {
     color: var(--color-text-secondary);
-    opacity: 0.9;
-    font-size: 1.05rem;
-    margin-bottom: 1.75rem;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    margin: 0 0 0.75rem 0;
 }
 
-.dataset-pill {
+.sidebar-hero__pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.85rem 1.6rem;
+    gap: 0.5rem;
+    padding: 0.6rem 0.95rem;
     border-radius: 999px;
-    background: linear-gradient(145deg, rgba(221, 190, 169, 0.22) 0%, rgba(180, 95, 77, 0.32) 100%);
-    border: 1px solid rgba(180, 95, 77, 0.28);
-    box-shadow: 0 18px 34px rgba(180, 95, 77, 0.18);
+    background: rgba(221, 190, 169, 0.18);
+    border: 1px solid rgba(221, 190, 169, 0.45);
     font-weight: 500;
 }
 
-.dataset-pill__label {
-    color: var(--color-text-primary);
+.sidebar-hero__pill-label {
+    color: var(--color-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    font-size: 0.65rem;
 }
 
-.dataset-pill__value {
-    color: var(--color-background);
+.sidebar-hero__pill-value {
+    color: var(--color-accent-primary-darker);
     font-weight: 600;
-    letter-spacing: 0.02em;
 }
 
 .section-card {
@@ -414,31 +423,27 @@ def main():
         st.error("❌ No data files found. Please ensure Parquet files are in the data/processed/ directory.")
         return
 
+    logo_data_uri = get_logo_data_uri()
+
     # Professional sidebar with enhanced styling
     with st.sidebar:
-        # Header with better styling
-        st.markdown(
-            """
-        <div style='text-align: center; padding: 1rem 0; margin-bottom: 1rem;
-                    background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background-alt) 100%);
-                    border-radius: 8px; border: 1px solid var(--color-border-light);'>
-            <h3 style='color: var(--color-text-primary); margin: 0; font-weight: 400;'>📊 System Status</h3>
+        if logo_data_uri:
+            st.markdown(
+                f"""
+        <div class='sidebar-logo'>
+            <img src='{logo_data_uri}' alt='converSQL logo' />
         </div>
         """,
-            unsafe_allow_html=True,
-        )
+                unsafe_allow_html=True,
+            )
 
-        # Data overview with metrics styling
-        parquet_files = st.session_state.get("parquet_files", [])
         st.markdown(
             """
-        <div style='margin-bottom: 0.5rem;'>
-            <span style='color: var(--color-text-secondary); font-size: 0.9rem; font-weight: 500;'>Data Files:</span>
-            <span style='color: var(--color-accent-primary-darker); font-weight: 600; margin-left: 0.5rem;'>{}</span>
+        <div class='sidebar-hero'>
+            <span class='sidebar-hero__pill-label'>Dataset</span>
+            <span class='sidebar-hero__pill-value'>🏠 Single Family Loan Analytics</span>
         </div>
-        """.format(
-                len(parquet_files)
-            ),
+        """,
             unsafe_allow_html=True,
         )
 
@@ -637,33 +642,6 @@ def main():
                     unsafe_allow_html=True,
                 )
 
-    # Professional header with subtle styling
-    logo_data_uri = get_logo_data_uri()
-    if logo_data_uri:
-        st.markdown(
-            f"""
-            <div class='brand-logo'>
-                <img src='{logo_data_uri}' alt='converSQL logo' />
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        """
-    <div class='hero-section'>
-        <span class='hero-eyebrow'>Multi-Provider AI Intelligence for Mortgage Portfolios</span>
-        <h1>Natural Language to SQL Query Generation</h1>
-        <p class='hero-subhead'>Conversational analytics with ontological guardrails for mortgage portfolios.</p>
-        <div class='dataset-pill'>
-            <span class='dataset-pill__label'>Dataset</span>
-            <span class='dataset-pill__value'>🏠 Single Family Loan Analytics</span>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
     # Enhanced tab layout with ontology exploration
     tab1, tab2, tab3 = st.tabs(["🔍 Query Builder", "🗺️ Data Ontology", "🔧 Advanced"])
 
@@ -832,6 +810,8 @@ def main():
                         st.session_state.show_edit_sql = False
                         st.rerun()
 
+        st.markdown("</div>", unsafe_allow_html=True)
+
     with tab2:
         st.markdown(
             """
@@ -863,7 +843,6 @@ def main():
         #         label="📅 Data Vintage",
         #         value=PORTFOLIO_CONTEXT['overview']['vintage_range']
 
-        st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("<div class='section-spacer'></div>", unsafe_allow_html=True)
         #     )
         st.markdown("---")
