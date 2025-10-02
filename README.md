@@ -6,7 +6,7 @@
 # converSQL
 
 ![CI](https://github.com/ravishan16/converSQL/actions/workflows/ci.yml/badge.svg)
-![Format & Lint](https://github.com/ravishan16/converSQL/actions/workflows/format-code.yml/badge.svg)
+[![Code Coverage](https://codecov.io/gh/ravishan16/converSQL/branch/main/graph/badge.svg)](https://app.codecov.io/gh/ravishan16/converSQL)
 ![License: MIT](https://img.shields.io/badge/License-MIT-CA9C72.svg)
 ![Built with Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B.svg?logo=streamlit&logoColor=white)
 
