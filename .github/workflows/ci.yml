@@ -64,6 +64,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Run smoke tests
+      run: |
+        pytest -k smoke -v
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+    
     - name: Run unit tests with coverage
       run: |
         pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing
