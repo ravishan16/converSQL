@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""AI service orchestration for SQL generation providers."""
-
 import hashlib
 import logging
 import os
@@ -211,3 +208,24 @@ def generate_sql_with_ai(user_question: str, schema_context: str) -> Tuple[str, 
     service = get_ai_service()
     sql_query, error_msg, provider = service.generate_sql(user_question, schema_context)
     return sql_query, error_msg
+
+
+@st.cache_resource(ttl=3600)  # Cache for 1 hour
+def load_ai_service():
+    """Load and cache AI service with adapter pattern."""
+    return get_ai_service()
+
+
+def generate_sql_with_bedrock(user_question: str, schema_context: str, bedrock_client=None) -> Tuple[str, str]:
+    """Generate SQL - backward compatibility wrapper for AI service."""
+    return generate_sql_with_ai(user_question, schema_context)
+
+
+def get_ai_service_status() -> Dict[str, Any]:
+    """Get AI service status for UI display."""
+    service = get_ai_service()
+    return {
+        "available": service.is_available(),
+        "active_provider": service.get_active_provider(),
+        "provider_status": service.get_provider_status(),
+    }

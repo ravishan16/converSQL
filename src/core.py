@@ -19,9 +19,9 @@ from .data_dictionary import generate_enhanced_schema_context
 
 # Optional modular imports (best-effort; keep legacy behavior if missing)
 try:  # pragma: no cover - optional during migration
-    from conversql.utils.plugins import load_callable
     from conversql.data.catalog import ParquetDataset, StaticCatalog
     from conversql.ontology.schema import build_schema_context_from_parquet
+    from conversql.utils.plugins import load_callable
 except Exception:  # pragma: no cover
     load_callable = None  # type: ignore
     ParquetDataset = None  # type: ignore
@@ -183,9 +183,7 @@ def execute_sql_query(sql_query: str, parquet_files: List[str]) -> pd.DataFrame:
             for file_path in parquet_files:
                 path = Path(file_path)
                 table_name = path.stem
-                conn.execute(
-                    f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet('{path.as_posix()}')"
-                )
+                conn.execute(f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet('{path.as_posix()}')")
 
             logger.debug("Executing SQL query: %s", sql_query)
             return conn.execute(sql_query).fetchdf()

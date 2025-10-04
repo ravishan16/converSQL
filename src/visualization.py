@@ -113,6 +113,7 @@ def _safe_index(options: list, value, default: int = 0) -> int:
     except Exception:
         return min(max(default, 0), len(options) - 1)
 
+
 def make_chart(
     df: pd.DataFrame,
     chart_type: str,
@@ -135,35 +136,56 @@ def make_chart(
         else:
             try:
                 import altair as _alt
+
                 sort_arg_x = _alt.SortField(field=sort_by, order=order)
             except Exception:
                 sort_arg_x = None
 
     if chart_type == "Bar":
-        chart = alt.Chart(df).mark_bar().encode(
-            x=alt.X(x, sort=sort_arg_x),
-            y=y,
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(
+                x=alt.X(x, sort=sort_arg_x),
+                y=y,
+            )
         )
     elif chart_type == "Line":
-        chart = alt.Chart(df).mark_line().encode(
-            x=x,
-            y=y,
+        chart = (
+            alt.Chart(df)
+            .mark_line()
+            .encode(
+                x=x,
+                y=y,
+            )
         )
     elif chart_type == "Scatter":
-        chart = alt.Chart(df).mark_circle().encode(
-            x=x,
-            y=y,
+        chart = (
+            alt.Chart(df)
+            .mark_circle()
+            .encode(
+                x=x,
+                y=y,
+            )
         )
     elif chart_type == "Histogram":
         # For histogram, Altair expects a quantitative column on X
-        chart = alt.Chart(df).mark_bar().encode(
-            x=alt.X(x, bin=True),
-            y='count()',
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(
+                x=alt.X(x, bin=True),
+                y="count()",
+            )
         )
     elif chart_type == "Heatmap":
-        chart = alt.Chart(df).mark_rect().encode(
-            x=alt.X(x, sort=sort_arg_x),
-            y=y,
+        chart = (
+            alt.Chart(df)
+            .mark_rect()
+            .encode(
+                x=alt.X(x, sort=sort_arg_x),
+                y=y,
+            )
         )
     else:
         st.error("Invalid chart type")
@@ -174,14 +196,15 @@ def make_chart(
 
     return chart.properties(width="container")
 
+
 def get_chart_recommendation(df: pd.DataFrame) -> tuple[str | None, str | None, str | None]:
     """
     Recommend a chart type and axes based on the DataFrame schema.
     """
     cols = df.columns
-    numeric_cols = df.select_dtypes(include=['number']).columns
-    categorical_cols = df.select_dtypes(exclude=['number', 'datetime']).columns
-    datetime_cols = df.select_dtypes(include=['datetime', 'datetimetz']).columns
+    numeric_cols = df.select_dtypes(include=["number"]).columns
+    categorical_cols = df.select_dtypes(exclude=["number", "datetime"]).columns
+    datetime_cols = df.select_dtypes(include=["datetime", "datetimetz"]).columns
 
     if len(categorical_cols) == 1 and len(numeric_cols) > 1:
         return "Bar", categorical_cols[0], numeric_cols[0]
@@ -193,8 +216,9 @@ def get_chart_recommendation(df: pd.DataFrame) -> tuple[str | None, str | None, 
         return "Scatter", numeric_cols[0], numeric_cols[1]
     elif len(numeric_cols) > 2 and len(categorical_cols) == 0:
         return "Heatmap", numeric_cols[0], numeric_cols[1]
-    
+
     return None, None, None
+
 
 def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
     """Render the visualization layer with optional container scoping.
@@ -214,7 +238,9 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
     selected_chart = st.session_state.get(keys["chart"], "Bar")
     selected_x = st.session_state.get(keys["x"], cols[0] if cols else None)
     selected_y = st.session_state.get(keys["y"]) if selected_chart != "Histogram" else None
-    selected_color = st.session_state.get(keys["color"]) if st.session_state.get(keys["color"]) in ([None] + list(cols)) else None
+    selected_color = (
+        st.session_state.get(keys["color"]) if st.session_state.get(keys["color"]) in ([None] + list(cols)) else None
+    )
 
     # Clamp invalid columns BEFORE widgets render to avoid Streamlit API exceptions
     if cols:
@@ -250,7 +276,13 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
     # Controls bound to scoped state keys (compact two-column layout)
     ctrl_col1, ctrl_col2 = st.columns(2)
     with ctrl_col1:
-        st.selectbox("Chart type", ALLOWED_CHART_TYPES, index=_safe_index(ALLOWED_CHART_TYPES, selected_chart), key=keys["chart"], help="Choose visualization type")
+        st.selectbox(
+            "Chart type",
+            ALLOWED_CHART_TYPES,
+            index=_safe_index(ALLOWED_CHART_TYPES, selected_chart),
+            key=keys["chart"],
+            help="Choose visualization type",
+        )
     with ctrl_col2:
         st.selectbox("X-axis", cols, index=_safe_index(cols, selected_x), key=keys["x"], help="X column")
 
@@ -300,12 +332,14 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
             sort_dir = params.get("sort_dir", "Ascending")
             if sort_col and sort_col in plot_df.columns:
                 # Do not mutate original df; already using copy()
-                ascending = (sort_dir == "Ascending")
+                ascending = sort_dir == "Ascending"
                 try:
                     plot_df = plot_df.sort_values(by=sort_col, ascending=ascending)
                 except Exception:
                     # If sorting fails (e.g., mixed types), coerce to string as a last resort
-                    plot_df = plot_df.assign(**{sort_col: plot_df[sort_col].astype(str)}).sort_values(by=sort_col, ascending=ascending)
+                    plot_df = plot_df.assign(**{sort_col: plot_df[sort_col].astype(str)}).sort_values(
+                        by=sort_col, ascending=ascending
+                    )
 
             y_arg = params.get("y")
             if params.get("chart") == "Histogram":
@@ -325,7 +359,11 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
                 plot_df,
                 params.get("chart", "Bar"),
                 params.get("x", cols[0] if cols else None),
-                (None if params.get("chart") == "Histogram" else (y_arg or (cols[1] if len(cols) > 1 else (cols[0] if cols else None)))),
+                (
+                    None
+                    if params.get("chart") == "Histogram"
+                    else (y_arg or (cols[1] if len(cols) > 1 else (cols[0] if cols else None)))
+                ),
                 params.get("color"),
                 params.get("sort_col"),
                 params.get("sort_dir", "Ascending"),
@@ -398,7 +436,18 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
             safe_params = {
                 "chart": rec_chart or "Bar",
                 "x": rec_x or (list(df.columns)[0] if len(df.columns) else None),
-                "y": None if (rec_chart == "Histogram") else (rec_y or (list(df.columns)[1] if len(df.columns) > 1 else (list(df.columns)[0] if len(df.columns) else None))),
+                "y": (
+                    None
+                    if (rec_chart == "Histogram")
+                    else (
+                        rec_y
+                        or (
+                            list(df.columns)[1]
+                            if len(df.columns) > 1
+                            else (list(df.columns)[0] if len(df.columns) else None)
+                        )
+                    )
+                ),
                 "color": None,
                 "sort_col": rec_y if rec_y in df.columns else None,
                 "sort_dir": "Ascending",

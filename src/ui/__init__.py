@@ -7,10 +7,10 @@ minimal here and only re-export stable helpers actually present.
 """
 
 from .components import (
-	display_results,
-	format_file_size,
-	render_app_footer,
-	render_section_header,
+    display_results,
+    format_file_size,
+    render_app_footer,
+    render_section_header,
 )
 
 __all__ = ["display_results", "format_file_size", "render_app_footer", "render_section_header"]
