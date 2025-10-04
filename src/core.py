@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""
-Core functionality for Single Family Loan Analytics Platform
-Enhanced with caching, AI service integration, and R2 support.
-"""
+"""Core functionality for the converSQL Streamlit application."""
 
-import glob
+import logging
 import os
+import subprocess
+import sys
+from contextlib import closing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import duckdb
@@ -30,11 +31,13 @@ except Exception:  # pragma: no cover
 # Load environment variables
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 # Configuration from environment variables
-PROCESSED_DATA_DIR = os.getenv("PROCESSED_DATA_DIR", "data/processed/")
+PROCESSED_DATA_DIR = Path(os.getenv("PROCESSED_DATA_DIR", "data/processed/"))
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 1 hour default
-DATASET_ROOT = os.getenv("DATASET_ROOT", PROCESSED_DATA_DIR)
+DATASET_ROOT = os.getenv("DATASET_ROOT", str(PROCESSED_DATA_DIR))
 DATASET_PLUGIN = os.getenv("DATASET_PLUGIN", "")
 ONTOLOGY_PLUGIN = os.getenv("ONTOLOGY_PLUGIN", "")
 
@@ -45,13 +48,12 @@ def scan_parquet_files() -> List[str]:
     # Check if data sync is needed
     sync_data_if_needed()
 
-    if not os.path.exists(PROCESSED_DATA_DIR):
+    if not PROCESSED_DATA_DIR.exists():
         return []
 
-    pattern = os.path.join(PROCESSED_DATA_DIR, "*.parquet")
-    parquet_files = glob.glob(pattern)
+    parquet_files = sorted(PROCESSED_DATA_DIR.glob("*.parquet"))
 
-    return parquet_files
+    return [str(path) for path in parquet_files]
 
 
 def sync_data_if_needed(force: bool = False) -> bool:
@@ -65,34 +67,25 @@ def sync_data_if_needed(force: bool = False) -> bool:
     """
     try:
         # Check if processed directory exists and has valid data
-        if not force and os.path.exists(PROCESSED_DATA_DIR):
-            parquet_files = glob.glob(os.path.join(PROCESSED_DATA_DIR, "*.parquet"))
+        if not force and PROCESSED_DATA_DIR.exists():
+            parquet_files = sorted(PROCESSED_DATA_DIR.glob("*.parquet"))
             if parquet_files:
                 # Verify files are not empty/corrupted
                 try:
-                    import duckdb
-
-                    conn = duckdb.connect()
-                    # Quick validation - try to read first file
-                    test_query = f"SELECT COUNT(*) FROM '{parquet_files[0]}'"
-                    row = conn.execute(test_query).fetchone()
-                    conn.close()
+                    with closing(duckdb.connect()) as conn:
+                        test_query = f"SELECT COUNT(*) FROM '{parquet_files[0]}'"
+                        row = conn.execute(test_query).fetchone()
 
                     if row and row[0] > 0:
-                        print(f"✅ Found {len(parquet_files)} valid parquet file(s) with data")
+                        logger.info("Found %d valid parquet file(s) with data", len(parquet_files))
                         return True
-                    else:
-                        print("⚠️  Existing files appear empty, will re-sync")
-                except Exception:
-                    print("⚠️  Existing files appear corrupted, will re-sync")
+                    logger.warning("Existing parquet files appear empty; rerunning sync")
+                except Exception as exc:
+                    logger.warning("Existing parquet files appear corrupted; rerunning sync", exc_info=exc)
 
         # Try to sync from R2
         sync_reason = "Force sync requested" if force else "No valid local data found"
-        print(f"🔄 {sync_reason}. Attempting R2 sync...")
-
-        # Import and run sync script
-        import subprocess
-        import sys
+        logger.info("%s. Attempting R2 sync…", sync_reason)
 
         sync_args = [sys.executable, "scripts/sync_data.py"]
         if force:
@@ -101,16 +94,16 @@ def sync_data_if_needed(force: bool = False) -> bool:
         sync_result = subprocess.run(sync_args, capture_output=True, text=True)
 
         if sync_result.returncode == 0:
-            print("✅ R2 sync completed successfully")
+            logger.info("R2 sync completed successfully")
             return True
         else:
-            print(f"⚠️  R2 sync failed: {sync_result.stderr}")
+            logger.error("R2 sync failed: %s", sync_result.stderr.strip())
             if sync_result.stdout:
-                print(f"📋 Sync output: {sync_result.stdout}")
+                logger.debug("Sync output: %s", sync_result.stdout.strip())
             return False
 
     except Exception as e:
-        print(f"⚠️  Error during data sync: {e}")
+        logger.error("Error during data sync", exc_info=e)
         return False
 
 
@@ -138,26 +131,26 @@ def get_basic_table_schemas(parquet_files: List[str]) -> str:
     create_statements = []
 
     try:
-        conn = duckdb.connect()
+        with closing(duckdb.connect()) as conn:
+            for file_path in parquet_files:
+                path = Path(file_path)
+                table_name = path.stem
+                query = f"DESCRIBE SELECT * FROM '{path.as_posix()}' LIMIT 1"
+                schema_df = conn.execute(query).fetchdf()
 
-        for file_path in parquet_files:
-            table_name = os.path.splitext(os.path.basename(file_path))[0]
-            query = f"DESCRIBE SELECT * FROM '{file_path}' LIMIT 1"
-            schema_df = conn.execute(query).fetchdf()
+                columns = []
+                for _, row in schema_df.iterrows():
+                    column_name = row["column_name"]
+                    column_type = row["column_type"]
+                    columns.append(f"    {column_name} {column_type}")
 
-            columns = []
-            for _, row in schema_df.iterrows():
-                column_name = row["column_name"]
-                column_type = row["column_type"]
-                columns.append(f"    {column_name} {column_type}")
+                create_statement = f"CREATE TABLE {table_name} (\n" + ",\n".join(columns) + "\n);"
+                create_statements.append(create_statement)
 
-            create_statement = f"CREATE TABLE {table_name} (\n" + ",\n".join(columns) + "\n);"
-            create_statements.append(create_statement)
-
-        conn.close()
         return "\n\n".join(create_statements)
 
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to build basic table schemas", exc_info=exc)
         return ""
 
 
@@ -177,21 +170,28 @@ def generate_sql_with_bedrock(user_question: str, schema_context: str, bedrock_c
 
 def execute_sql_query(sql_query: str, parquet_files: List[str]) -> pd.DataFrame:
     """Execute SQL query using DuckDB."""
+    if not sql_query or not sql_query.strip():
+        return pd.DataFrame()
+
+    if not parquet_files:
+        logger.warning("SQL execution requested without any parquet files loaded")
+        return pd.DataFrame()
+
     try:
-        conn = duckdb.connect()
+        with closing(duckdb.connect()) as conn:
+            # Register each Parquet file as a view to avoid copying data into DuckDB
+            for file_path in parquet_files:
+                path = Path(file_path)
+                table_name = path.stem
+                conn.execute(
+                    f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet('{path.as_posix()}')"
+                )
 
-        # Register each Parquet file as a table
-        for file_path in parquet_files:
-            table_name = os.path.splitext(os.path.basename(file_path))[0]
-            conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM '{file_path}'")
+            logger.debug("Executing SQL query: %s", sql_query)
+            return conn.execute(sql_query).fetchdf()
 
-        # Execute the user's query
-        result_df = conn.execute(sql_query).fetchdf()
-        conn.close()
-
-        return result_df
-
-    except Exception:
+    except Exception as exc:
+        logger.error("SQL execution failed", exc_info=exc)
         return pd.DataFrame()
 
 

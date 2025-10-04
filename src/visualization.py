@@ -1,7 +1,8 @@
+"""Visualization helpers for the converSQL Streamlit UI."""
 
-import streamlit as st
-import pandas as pd
 import altair as alt
+import pandas as pd
+import streamlit as st
 
 # Allow rendering large datasets without silently dropping charts
 try:

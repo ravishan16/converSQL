@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-AI Service Module
-Manages AI providers using the adapter pattern for SQL generation.
-"""
+"""AI service orchestration for SQL generation providers."""
 
 import hashlib
+import logging
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -21,6 +19,8 @@ except Exception:  # fallback to legacy
 
 # Load environment variables
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # AI Configuration
 AI_PROVIDER = os.getenv("AI_PROVIDER", "claude").lower()
@@ -61,11 +61,12 @@ class AIService:
         for provider_id, adapter in self.adapters.items():
             if adapter.is_available():
                 self.active_provider = provider_id
-                print(f"ℹ️  Using {adapter.name} (fallback from {AI_PROVIDER})")
+                logger.info("Using %s (fallback from %s)", adapter.name, AI_PROVIDER)
                 return
 
         # No providers available
         self.active_provider = None
+        logger.warning("No AI providers available; SQL generation disabled")
 
     def is_available(self) -> bool:
         """Check if any AI provider is available."""
@@ -123,13 +124,6 @@ class AIService:
         """Build the SQL generation prompt."""
         return build_sql_generation_prompt(user_question, schema_context)
 
-    @st.cache_data(ttl=PROMPT_CACHE_TTL)
-    def _cached_generate_sql(_self, user_question: str, schema_context: str, provider: str) -> Tuple[str, str]:
-        """Cached SQL generation to reduce API calls."""
-        # Cache decorator handles the caching
-        # The actual generation happens in generate_sql
-        return "", ""
-
     def generate_sql(self, user_question: str, schema_context: str) -> Tuple[str, str, str]:
         """
         Generate SQL query using available AI provider.
@@ -160,20 +154,23 @@ No AI providers are configured or available. This could be due to:
 - Gemini: Set GOOGLE_API_KEY in .env"""
             return "", error_msg, "none"
 
-        # Check cache if enabled
-        if ENABLE_PROMPT_CACHE:
-            try:
-                cached_result = self._cached_generate_sql(user_question, schema_context, self.active_provider)
-                if cached_result[0]:  # If cached result exists
-                    return (
-                        cached_result[0],
-                        cached_result[1],
-                        f"{self.active_provider} (cached)",
-                    )
-            except Exception:
-                pass  # Cache miss or error, continue with API call
+        cache_key: Optional[str] = None
+        cache_store: Optional[Dict[str, Tuple[str, str]]] = None
 
-        # Build prompt
+        if ENABLE_PROMPT_CACHE:
+            cache_key = self._create_prompt_hash(user_question, schema_context)
+            try:
+                cache_store = cast(Dict[str, Tuple[str, str]], st.session_state.setdefault("_ai_prompt_cache", {}))
+            except RuntimeError:
+                cache_store = None
+            else:
+                cached_payload = cache_store.get(cache_key)
+                if isinstance(cached_payload, tuple) and len(cached_payload) == 2:
+                    cached_sql, cached_error = cached_payload
+                    if cached_sql and not cached_error:
+                        return cached_sql, cached_error, f"{self.active_provider} (cached)"
+
+        # Build prompt after cache lookup to prevent unnecessary work
         prompt = self._build_sql_prompt(user_question, schema_context)
 
         # Get active adapter
@@ -185,12 +182,8 @@ No AI providers are configured or available. This could be due to:
         sql_query, error_msg = adapter.generate_sql(prompt)
 
         # Cache the result if successful and caching is enabled
-        if ENABLE_PROMPT_CACHE and sql_query and not error_msg:
-            try:
-                # Update cache by calling the cached function
-                self._cached_generate_sql(user_question, schema_context, self.active_provider)
-            except Exception:
-                pass  # Cache update failed, but we have the result
+        if cache_key and cache_store is not None and sql_query and not error_msg:
+            cache_store[cache_key] = (sql_query, error_msg)
 
         return sql_query, error_msg, self.active_provider
 

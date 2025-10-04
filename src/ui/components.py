@@ -308,5 +308,39 @@ def render_data_summary(parquet_files: List[str]) -> None:
                 st.write(f"**File Path:** `{info['file_path']}`")
             with col2:
                 st.write(f"**Size:** {info['size_formatted']}")
-            with col2:
-                st.write(f"**Size:** {info['size_formatted']}")
+
+
+def render_app_footer(provider_text: str, *, show_divider: bool = True) -> None:
+    """Render the shared converSQL footer."""
+    if show_divider:
+        try:
+            st.divider()
+        except AttributeError:
+            st.markdown("<hr />", unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+    <div style='background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background-alt) 100%);
+                border-top: 1px solid var(--color-border-light); padding: 2rem; margin-top: 2rem;
+                text-align: center; border-radius: 0 0 8px 8px;'>
+        <div style='color: var(--color-text-primary); font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
+            💬 converSQL - Natural Language to SQL Query Generation Platform
+        </div>
+        <div style='color: var(--color-text-secondary); font-size: 0.8rem; line-height: 1.4;'>
+            Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>{provider_text}</strong> • <strong>Ontological Data Intelligence</strong><br>
+            <span style='font-size: 0.75rem; opacity: 0.8;'>
+                Implementation Showcase: Single Family Loan Analytics
+            </span>
+        </div>
+        <div class='footer-links' style='margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;'>
+            <a href='https://github.com/ravishan16/converSQL' target='_blank' rel='noopener noreferrer'
+               style='color: var(--color-accent-primary-darker); text-decoration: none; font-weight: 500; font-size: 0.85rem;'>GitHub Repository</a>
+            <a href='https://github.com/ravishan16/converSQL/issues' target='_blank' rel='noopener noreferrer'
+               style='color: var(--color-accent-primary-darker); text-decoration: none; font-weight: 500; font-size: 0.85rem;'>Issue Tracker</a>
+            <a href='https://github.com/ravishan16/converSQL/pulls' target='_blank' rel='noopener noreferrer'
+               style='color: var(--color-accent-primary-darker); text-decoration: none; font-weight: 500; font-size: 0.85rem;'>Pull Requests</a>
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )

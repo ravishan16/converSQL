@@ -29,6 +29,7 @@ from src.simple_auth import get_auth_service
 # Import authentication
 from src.simple_auth_components import simple_auth_wrapper
 from src.visualization import render_visualization
+from src.ui import render_app_footer
 
 # Configure page with professional styling
 favicon_path = get_favicon_path()
@@ -597,10 +598,10 @@ def main():
                 )
                 st.markdown(f"- **Enable Auth**: {os.getenv('ENABLE_AUTH', 'true')}")
 
-        st.markdown(
-            "<div style='margin: 1rem 0; border-bottom: 1px solid var(--color-border-light);'></div>",
-            unsafe_allow_html=True,
-        )
+        try:
+            st.divider()
+        except AttributeError:
+            st.markdown("<hr />", unsafe_allow_html=True)
 
         # Professional data tables section
         with st.expander("📋 Available Tables", expanded=False):
@@ -1201,9 +1202,6 @@ def main():
                     st.warning("Schema not available")
 
 
-    # Professional footer with enhanced styling
-    st.markdown("<div style='margin-top: 3rem;'></div>", unsafe_allow_html=True)
-
     # Footer content with professional design
     ai_status = get_ai_service_status()
     ai_provider_text = ""
@@ -1218,29 +1216,7 @@ def main():
     else:
         ai_provider_text = "Manual Analysis Mode"
 
-    st.markdown(
-        f"""
-    <div style='background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background-alt) 100%);
-                border-top: 1px solid var(--color-border-light); padding: 2rem; margin-top: 2rem;
-                text-align: center; border-radius: 0 0 8px 8px;'>
-        <div style='color: var(--color-text-primary); font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
-            💬 converSQL - Natural Language to SQL Query Generation Platform
-        </div>
-        <div style='color: var(--color-text-secondary); font-size: 0.8rem; line-height: 1.4;'>
-            Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>{ai_provider_text}</strong> • <strong>Ontological Data Intelligence</strong><br>
-            <span style='font-size: 0.75rem; opacity: 0.8;'>
-                Implementation Showcase: Single Family Loan Analytics
-            </span>
-        </div>
-        <div class='footer-links'>
-            <a href='https://github.com/ravishan16/converSQL' target='_blank' rel='noopener noreferrer'>GitHub Repository</a>
-            <a href='https://github.com/ravishan16/converSQL/issues' target='_blank' rel='noopener noreferrer'>Issue Tracker</a>
-            <a href='https://github.com/ravishan16/converSQL/pulls' target='_blank' rel='noopener noreferrer'>Pull Requests</a>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+    render_app_footer(ai_provider_text)
 
 
 if __name__ == "__main__":
