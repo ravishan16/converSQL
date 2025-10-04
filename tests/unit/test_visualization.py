@@ -1,4 +1,3 @@
-import altair as alt
 import pandas as pd
 import pytest
 import streamlit as st
@@ -201,4 +200,5 @@ def test_init_chart_state(sample_df, monkeypatch):
         keys, cols = _init_chart_state(sample_df, "test2")
         assert st.session_state.get(keys["chart"]) == "Bar"
         assert st.session_state.get(keys["x"]) == "C"
+        assert st.session_state.get(keys["y"]) == "A"
         assert st.session_state.get(keys["y"]) == "A"

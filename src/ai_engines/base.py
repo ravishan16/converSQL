@@ -33,7 +33,7 @@ class AIEngineAdapter(ABC):
         self._initialize()
 
         # Rate limiting state
-        self._requests = []  # type: List[float]
+        self._requests = []  # type: list[float]
         self._max_requests_per_minute = int(os.getenv("AI_MAX_REQUESTS_PER_MINUTE", "20"))
         self._request_window = 60  # 1 minute window
 

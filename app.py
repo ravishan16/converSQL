@@ -776,7 +776,7 @@ def main():
             unsafe_allow_html=True,
         )
 
-        # Show generated SQL in a compact expander to avoid taking vertical space
+        # Show generated SQL in a compact expander to avoid pre-results blank space
         if st.session_state.generated_sql:
             with st.expander("🧠 AI-Generated SQL", expanded=False):
                 st.code(st.session_state.generated_sql, language="sql")
@@ -910,7 +910,7 @@ def main():
                 st.markdown("#### 🔍 Search results")
                 for domain_name, fname, desc, dtype in results[:100]:
                     st.markdown(f"• **{fname}** ({dtype}) — {desc}")
-                    st.caption(f"Domain: {domain_name.replace('_',' ').title()}")
+                    st.caption(f"Domain: {domain_name.replace('_', ' ').title()}")
                 st.markdown("---")
             else:
                 st.info("No matching fields found.")

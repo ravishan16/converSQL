@@ -1,11 +1,11 @@
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 from dotenv import load_dotenv
 
 from src.ai_engines.gemini_adapter import GeminiAdapter
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 load_dotenv()
 

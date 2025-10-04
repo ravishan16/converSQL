@@ -303,7 +303,7 @@ def _build_and_render(df: pd.DataFrame, params: dict, keys: dict) -> bool:
         chart = make_chart(
             plot_df,
             params.get("chart", "Bar"),
-            params.get("x"),
+            params.get("x") or available_cols[0],
             None if params.get("chart") == "Histogram" else y_arg,
             params.get("color"),
             params.get("sort_col"),

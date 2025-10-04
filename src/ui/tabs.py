@@ -3,8 +3,9 @@ import time
 import pandas as pd
 import streamlit as st
 
+from src.core import execute_sql_query  # Assuming it's here; adjust if elsewhere
 from src.services.ai_service import generate_sql_with_ai
-from src.services.data_service import display_results, execute_sql_query
+from src.services.data_service import display_results
 from src.simple_auth import get_auth_service
 from src.utils import get_analyst_questions
 
@@ -248,7 +249,7 @@ def render_tabs():
                 st.markdown("#### 🔍 Search results")
                 for domain_name, fname, desc, dtype in results[:100]:
                     st.markdown(f"• **{fname}** ({dtype}) — {desc}")
-                    st.caption(f"Domain: {domain_name.replace('_',' ').title()}")
+                    st.caption(f"Domain: {domain_name.replace('_', ' ').title()}")
                 st.markdown("---")
             else:
                 st.info("No matching fields found.")
