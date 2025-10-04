@@ -101,7 +101,7 @@ class GeminiAdapter(AIEngineAdapter):
         """Check if Gemini client is initialized and ready."""
         return self.model is not None and self.api_key is not None
 
-    def generate_sql(self, prompt: str) -> Tuple[str, str]:
+    def _generate_sql_impl(self, prompt: str) -> Tuple[str, str]:
         """
         Generate SQL using Google Gemini.
 

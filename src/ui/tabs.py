@@ -1,11 +1,10 @@
-import os
 import time
 
 import pandas as pd
 import streamlit as st
 
 from src.services.ai_service import generate_sql_with_ai
-from src.services.data_service import display_results
+from src.services.data_service import display_results, execute_sql_query
 from src.simple_auth import get_auth_service
 from src.utils import get_analyst_questions
 

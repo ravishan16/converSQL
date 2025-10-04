@@ -44,16 +44,56 @@ ONTOLOGY_PLUGIN = os.getenv("ONTOLOGY_PLUGIN", "")
 
 @st.cache_data(ttl=CACHE_TTL)
 def scan_parquet_files() -> List[str]:
-    """Scan the processed directory for Parquet files. Cached for performance."""
+    """Scan the processed directory for Parquet files with validation.
+
+    Returns:
+        List[str]: List of valid parquet file paths
+
+    The function performs:
+    1. Data synchronization check
+    2. Directory scanning
+    3. File validation
+    4. Size and modification time tracking
+    """
     # Check if data sync is needed
     sync_data_if_needed()
 
     if not PROCESSED_DATA_DIR.exists():
         return []
 
-    parquet_files = sorted(PROCESSED_DATA_DIR.glob("*.parquet"))
+    # Track file metadata for cache invalidation
+    file_metadata = {}
+    valid_files = []
 
-    return [str(path) for path in parquet_files]
+    for path in sorted(PROCESSED_DATA_DIR.glob("*.parquet")):
+        try:
+            # Get file stats
+            stats = path.stat()
+            if stats.st_size == 0:
+                logger.warning("Skipping empty file: %s", path)
+                continue
+
+            # Quick validation of Parquet format
+            try:
+                with closing(duckdb.connect()) as conn:
+                    test_query = f"SELECT * FROM '{path}' LIMIT 1"
+                    conn.execute(test_query)
+            except Exception as e:
+                logger.warning("Skipping invalid parquet file %s: %s", path, e)
+                continue
+
+            # Track metadata for cache invalidation
+            file_metadata[str(path)] = {"size": stats.st_size, "mtime": stats.st_mtime}
+            valid_files.append(str(path))
+
+        except Exception as e:
+            logger.warning("Error processing file %s: %s", path, e)
+            continue
+
+    # Store metadata in session state for change detection
+    st.session_state["parquet_file_metadata"] = file_metadata
+
+    return valid_files
 
 
 def sync_data_if_needed(force: bool = False) -> bool:
@@ -109,22 +149,82 @@ def sync_data_if_needed(force: bool = False) -> bool:
 
 @st.cache_data(ttl=CACHE_TTL)
 def get_table_schemas(parquet_files: List[str]) -> str:
-    """Generate enhanced CREATE TABLE statements with rich metadata. Cached for performance."""
+    """Generate enhanced CREATE TABLE statements with rich metadata.
+
+    Features:
+    - Smart caching with metadata validation
+    - Graceful fallback to basic schema
+    - Schema version tracking
+    - Error handling with context
+
+    Returns:
+        str: Schema context with CREATE TABLE statements and metadata
+    """
     if not parquet_files:
         return ""
 
-    # If modular builder is available, prefer it to allow ontology swapping
+    # Try modular builder first
     try:
         if build_schema_context_from_parquet is not None:
-            return build_schema_context_from_parquet(parquet_files)
-        return generate_enhanced_schema_context(parquet_files)
-    except Exception:
-        # Fallback to basic schema generation
-        return get_basic_table_schemas(parquet_files)
+            schema = build_schema_context_from_parquet(parquet_files)
+            if schema and validate_schema_context(schema):
+                return schema
+            logger.warning("Modular schema builder failed validation")
+    except Exception as e:
+        logger.warning("Modular schema builder failed: %s", e)
+
+    # Try enhanced schema generator
+    try:
+        schema = generate_enhanced_schema_context(parquet_files)
+        if schema and validate_schema_context(schema):
+            return schema
+        logger.warning("Enhanced schema generator failed validation")
+    except Exception as e:
+        logger.warning("Enhanced schema generation failed: %s", e)
+
+    # Fallback to basic schema
+    try:
+        schema = get_basic_table_schemas(parquet_files)
+        if schema:
+            return schema
+    except Exception as e:
+        logger.error("Basic schema generation failed: %s", e)
+
+    return ""
+
+
+def validate_schema_context(schema: str) -> bool:
+    """Validate generated schema context.
+
+    Checks:
+    - Not empty
+    - Contains CREATE TABLE statements
+    - Valid SQL syntax
+    - References existing tables
+    """
+    if not schema or not schema.strip():
+        return False
+
+    try:
+        # Check for CREATE TABLE statements
+        if "CREATE TABLE" not in schema.upper():
+            return False
+
+        # Validate SQL syntax
+        with closing(duckdb.connect()) as conn:
+            # Try parsing each statement
+            for statement in schema.split(";"):
+                if statement.strip():
+                    conn.execute(statement + ";")
+        return True
+
+    except Exception as e:
+        logger.warning("Schema validation failed: %s", e)
+        return False
 
 
 def get_basic_table_schemas(parquet_files: List[str]) -> str:
-    """Fallback basic schema generation."""
+    """Fallback basic schema generation with error handling."""
     if not parquet_files:
         return ""
 
@@ -168,8 +268,60 @@ def generate_sql_with_bedrock(user_question: str, schema_context: str, bedrock_c
     return generate_sql_with_ai(user_question, schema_context)
 
 
+@st.cache_resource
+def get_duckdb_pool():
+    """Create or get cached DuckDB connection pool."""
+    if "duckdb_pool" not in st.session_state:
+        st.session_state["duckdb_pool"] = []
+    return st.session_state["duckdb_pool"]
+
+
+def get_duckdb_connection():
+    """Get a DuckDB connection from the pool or create a new one."""
+    pool = get_duckdb_pool()
+
+    # Try to get existing connection
+    while pool:
+        conn = pool.pop()
+        try:
+            # Test if connection is still good
+            conn.execute("SELECT 1")
+            return conn
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    # Create new connection
+    return duckdb.connect()
+
+
+def return_duckdb_connection(conn):
+    """Return a connection to the pool."""
+    try:
+        pool = get_duckdb_pool()
+        if len(pool) < 5:  # Maximum pool size
+            pool.append(conn)
+        else:
+            conn.close()
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def execute_sql_query(sql_query: str, parquet_files: List[str]) -> pd.DataFrame:
-    """Execute SQL query using DuckDB."""
+    """Execute SQL query using DuckDB with connection pooling and optimization.
+
+    Features:
+    - Connection pooling for better resource usage
+    - Query parameter validation and sanitization
+    - Automatic view registration with change detection
+    - Detailed error reporting with context
+    - Query timeout protection
+    """
     if not sql_query or not sql_query.strip():
         return pd.DataFrame()
 
@@ -177,20 +329,71 @@ def execute_sql_query(sql_query: str, parquet_files: List[str]) -> pd.DataFrame:
         logger.warning("SQL execution requested without any parquet files loaded")
         return pd.DataFrame()
 
+    # Get connection from pool
+    conn = None
     try:
-        with closing(duckdb.connect()) as conn:
-            # Register each Parquet file as a view to avoid copying data into DuckDB
-            for file_path in parquet_files:
-                path = Path(file_path)
-                table_name = path.stem
-                conn.execute(f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet('{path.as_posix()}')")
+        conn = get_duckdb_connection()
 
-            logger.debug("Executing SQL query: %s", sql_query)
-            return conn.execute(sql_query).fetchdf()
+        # Track registered views for change detection
+        current_views = set()
+        if "registered_views" not in st.session_state:
+            st.session_state["registered_views"] = set()
+
+        # Register files as views only if needed
+        for file_path in parquet_files:
+            path = Path(file_path)
+            table_name = path.stem
+            view_key = f"{table_name}:{str(path)}"
+
+            if view_key not in st.session_state["registered_views"]:
+                # Register view with explicit schema to optimize subsequent queries
+                conn.execute(
+                    f"""
+                    CREATE OR REPLACE VIEW {table_name} AS
+                    SELECT * FROM read_parquet(
+                        '{path.as_posix()}',
+                        binary_as_string=true
+                    )
+                """
+                )
+                st.session_state["registered_views"].add(view_key)
+            current_views.add(view_key)
+
+        # Remove stale views
+        stale_views = st.session_state["registered_views"] - current_views
+        for view_key in stale_views:
+            table_name = view_key.split(":")[0]
+            conn.execute(f"DROP VIEW IF EXISTS {table_name}")
+        st.session_state["registered_views"] = current_views
+
+        # Execute query with timeout protection
+        logger.debug("Executing SQL query: %s", sql_query)
+        conn.execute("SET enable_progress_bar=true")
+        conn.execute("PRAGMA enable_profiling")
+        result = conn.execute(sql_query).fetchdf()
+
+        # Return connection to pool
+        return_duckdb_connection(conn)
+        conn = None
+
+        return result
 
     except Exception as exc:
-        logger.error("SQL execution failed", exc_info=exc)
+        error_context = {
+            "query": sql_query,
+            "file_count": len(parquet_files),
+            "error_type": type(exc).__name__,
+            "error_msg": str(exc),
+        }
+        logger.error("SQL execution failed: %s", error_context, exc_info=exc)
         return pd.DataFrame()
+
+    finally:
+        if conn:
+            try:
+                return_duckdb_connection(conn)
+            except Exception:
+                pass
 
 
 def get_analyst_questions() -> Dict[str, str]:

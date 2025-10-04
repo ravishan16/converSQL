@@ -757,9 +757,11 @@ def main():
 
         # Show warning only if AI is unavailable but user entered text
         if user_question.strip() and not st.session_state.get("ai_available", False):
-            st.warning(
-                "🤖 AI Assistant unavailable. Please configure Claude API or AWS Bedrock access, or use Manual SQL in the Advanced tab."
+            AI_UNAVAILABLE_MSG = (
+                "🤖 AI Assistant unavailable. Please configure Claude API or AWS Bedrock access, "
+                "or use Manual SQL in the Advanced tab."
             )
+            st.warning(AI_UNAVAILABLE_MSG)
 
         # Display AI errors
         if st.session_state.ai_error:

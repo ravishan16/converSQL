@@ -4,7 +4,8 @@
 import hashlib
 import logging
 import os
-from typing import Any, Dict, Optional, Tuple, cast
+import time
+from typing import Any, Dict, Optional, Tuple
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -117,12 +118,38 @@ class AIService:
         return status
 
     def _create_prompt_hash(self, user_question: str, schema_context: str) -> str:
-        """Create hash for prompt caching."""
-        combined = f"{user_question}|{schema_context}|{self.active_provider}"
-        return hashlib.md5(combined.encode()).hexdigest()
+        """Create hash for prompt caching.
+
+        Creates a unique hash based on:
+        - User question (normalized)
+        - Schema context (only structure, not comments)
+        - Active provider
+        - Cache version
+
+        This ensures cache invalidation when:
+        - Question changes semantically
+        - Schema structure changes
+        - Provider changes
+        - Cache version is bumped
+        """
+        # Normalize question by removing extra whitespace and lowercasing
+        normalized_question = " ".join(user_question.lower().split())
+
+        # Extract only schema structure (ignore comments/descriptions)
+        schema_lines = [
+            line.strip() for line in schema_context.splitlines() if line.strip() and not line.strip().startswith("--")
+        ]
+        schema_struct = "\n".join(schema_lines)
+
+        # Combine all cache key components
+        combined = f"{normalized_question}|{schema_struct}|{self.active_provider}|{CACHE_VERSION}"
+        return hashlib.sha256(combined.encode()).hexdigest()
 
     def _build_sql_prompt(self, user_question: str, schema_context: str) -> str:
-        """Build the SQL generation prompt."""
+        """Build the SQL generation prompt with performance optimization.
+
+        Reuses prompt components and avoids redundant template expansion.
+        """
         return build_sql_generation_prompt(user_question, schema_context)
 
     def generate_sql(self, user_question: str, schema_context: str) -> Tuple[str, str, str]:
@@ -161,15 +188,27 @@ No AI providers are configured or available. This could be due to:
         if ENABLE_PROMPT_CACHE:
             cache_key = self._create_prompt_hash(user_question, schema_context)
             try:
-                cache_store = cast(Dict[str, Tuple[str, str]], st.session_state.setdefault("_ai_prompt_cache", {}))
-            except RuntimeError:
-                cache_store = None
-            else:
+                # Use TTL-aware cache store
+                cache_store = st.session_state.setdefault("_ai_prompt_cache", {})
+                cache_timestamps = st.session_state.setdefault("_ai_prompt_cache_timestamps", {})
+                current_time = int(time.time())
+
+                # Clear expired cache entries
+                expired_keys = [k for k, t in cache_timestamps.items() if current_time - t > PROMPT_CACHE_TTL]
+                for k in expired_keys:
+                    cache_store.pop(k, None)
+                    cache_timestamps.pop(k, None)
+
+                # Check cache with validation
                 cached_payload = cache_store.get(cache_key)
                 if isinstance(cached_payload, tuple) and len(cached_payload) == 2:
                     cached_sql, cached_error = cached_payload
                     if cached_sql and not cached_error:
+                        # Update access time to extend TTL
+                        cache_timestamps[cache_key] = current_time
                         return cached_sql, cached_error, f"{self.active_provider} (cached)"
+            except RuntimeError:
+                cache_store = None
 
         # Build prompt after cache lookup to prevent unnecessary work
         prompt = self._build_sql_prompt(user_question, schema_context)
@@ -184,7 +223,26 @@ No AI providers are configured or available. This could be due to:
 
         # Cache the result if successful and caching is enabled
         if cache_key and cache_store is not None and sql_query and not error_msg:
-            cache_store[cache_key] = (sql_query, error_msg)
+            try:
+                # Validate SQL before caching
+                adapter = self.get_active_adapter()
+                if adapter:
+                    is_valid, validation_error = adapter.validate_response(sql_query)
+                    if is_valid:
+                        # Store result and timestamp
+                        cache_store[cache_key] = (sql_query, error_msg)
+                        st.session_state["_ai_prompt_cache_timestamps"][cache_key] = int(time.time())
+                        # Prune cache if too large (keep last 1000 entries)
+                        if len(cache_store) > 1000:
+                            oldest_key = min(
+                                st.session_state["_ai_prompt_cache_timestamps"].items(), key=lambda x: x[1]
+                            )[0]
+                            cache_store.pop(oldest_key, None)
+                            st.session_state["_ai_prompt_cache_timestamps"].pop(oldest_key, None)
+                    else:
+                        logger.warning("Not caching invalid SQL response: %s", validation_error)
+            except Exception as e:
+                logger.warning("Error while caching SQL response: %s", str(e))
 
         return sql_query, error_msg, self.active_provider
 

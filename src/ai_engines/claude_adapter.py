@@ -71,7 +71,7 @@ class ClaudeAdapter(AIEngineAdapter):
         """Check if Claude API client is initialized and ready."""
         return self.client is not None and self.api_key is not None and self.model is not None
 
-    def generate_sql(self, prompt: str) -> Tuple[str, str]:
+    def _generate_sql_impl(self, prompt: str) -> Tuple[str, str]:
         """
         Generate SQL using Claude API.
 

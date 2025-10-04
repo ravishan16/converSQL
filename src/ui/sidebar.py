@@ -6,6 +6,7 @@ import streamlit as st
 from src.branding import get_logo_data_uri
 from src.services.ai_service import get_ai_service_status
 from src.services.data_service import format_file_size
+from src.simple_auth import get_auth_service
 
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 

@@ -5,7 +5,7 @@ import subprocess
 import sys
 from contextlib import closing
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List
 
 import duckdb
 import pandas as pd
