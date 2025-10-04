@@ -13,7 +13,11 @@ from dotenv import load_dotenv
 
 # Import new adapters
 from src.ai_engines import BedrockAdapter, ClaudeAdapter, GeminiAdapter
-from src.prompts import build_sql_generation_prompt
+try:
+    # Prefer new unified prompt builder
+    from conversql.ai.prompts import build_sql_generation_prompt  # type: ignore
+except Exception:  # fallback to legacy
+    from src.prompts import build_sql_generation_prompt  # type: ignore
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +26,7 @@ load_dotenv()
 AI_PROVIDER = os.getenv("AI_PROVIDER", "claude").lower()
 ENABLE_PROMPT_CACHE = os.getenv("ENABLE_PROMPT_CACHE", "true").lower() == "true"
 PROMPT_CACHE_TTL = int(os.getenv("PROMPT_CACHE_TTL", "3600"))
+CACHE_VERSION = 1  # bump to invalidate cached AI service instances
 
 
 class AIServiceError(Exception):
@@ -192,7 +197,7 @@ No AI providers are configured or available. This could be due to:
 
 # Global AI service instance (cached)
 @st.cache_resource
-def get_ai_service() -> AIService:
+def get_ai_service(cache_version: int = CACHE_VERSION) -> AIService:
     """Get or create global AI service instance (cached)."""
     return AIService()
 

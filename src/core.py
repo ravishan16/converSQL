@@ -16,6 +16,17 @@ from dotenv import load_dotenv
 from .ai_service import generate_sql_with_ai, get_ai_service
 from .data_dictionary import generate_enhanced_schema_context
 
+# Optional modular imports (best-effort; keep legacy behavior if missing)
+try:  # pragma: no cover - optional during migration
+    from conversql.utils.plugins import load_callable
+    from conversql.data.catalog import ParquetDataset, StaticCatalog
+    from conversql.ontology.schema import build_schema_context_from_parquet
+except Exception:  # pragma: no cover
+    load_callable = None  # type: ignore
+    ParquetDataset = None  # type: ignore
+    StaticCatalog = None  # type: ignore
+    build_schema_context_from_parquet = None  # type: ignore
+
 # Load environment variables
 load_dotenv()
 
@@ -23,6 +34,9 @@ load_dotenv()
 PROCESSED_DATA_DIR = os.getenv("PROCESSED_DATA_DIR", "data/processed/")
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 1 hour default
+DATASET_ROOT = os.getenv("DATASET_ROOT", PROCESSED_DATA_DIR)
+DATASET_PLUGIN = os.getenv("DATASET_PLUGIN", "")
+ONTOLOGY_PLUGIN = os.getenv("ONTOLOGY_PLUGIN", "")
 
 
 @st.cache_data(ttl=CACHE_TTL)
@@ -106,7 +120,10 @@ def get_table_schemas(parquet_files: List[str]) -> str:
     if not parquet_files:
         return ""
 
+    # If modular builder is available, prefer it to allow ontology swapping
     try:
+        if build_schema_context_from_parquet is not None:
+            return build_schema_context_from_parquet(parquet_files)
         return generate_enhanced_schema_context(parquet_files)
     except Exception:
         # Fallback to basic schema generation

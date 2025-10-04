@@ -71,7 +71,7 @@ body {
 }
 
 .main .block-container {
-    padding: 2.5rem 3.25rem 3.5rem 3.25rem;
+    padding: 1.25rem 1.75rem 1.75rem 1.75rem;
     background: var(--color-background);
     max-width: 1360px;
     margin: 0 auto;
@@ -89,7 +89,7 @@ body {
     border-radius: 8px 8px 0 0;
     color: var(--color-text-secondary);
     font-weight: 500;
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     margin: 0 0.25rem;
     border-bottom: none;
 }
@@ -105,13 +105,14 @@ body {
     background-color: var(--color-background-alt);
     border: 1px solid var(--color-border-light);
     border-radius: 0.5rem;
-    padding: 1rem;
+    padding: 0.75rem;
 }
 
 .stSelectbox > div > div,
 .stTextArea > div > div {
     border-radius: 0.5rem;
     border-color: var(--color-border-light) !important;
+    box-shadow: none !important;
 }
 
 .stButton > button {
@@ -120,6 +121,7 @@ body {
     background: var(--color-accent-primary);
     color: var(--color-text-primary);
     border: 1px solid var(--color-accent-primary-darker);
+    padding: 0.6rem 1rem;
 }
 
 .stButton > button:hover {
@@ -265,10 +267,10 @@ div[data-testid="stDataFrame"] [data-testid="StyledDataFrame"] {
 .section-card {
     background: var(--color-background-alt);
     border: 1px solid var(--color-border-light);
-    border-radius: 22px;
-    padding: 2.25rem 2.15rem 2rem 2.15rem;
-    box-shadow: 0 22px 46px rgba(180, 95, 77, 0.14);
-    margin-bottom: 2.75rem;
+    border-radius: 18px;
+    padding: 1.25rem 1.25rem;
+    box-shadow: 0 12px 28px rgba(180, 95, 77, 0.10);
+    margin-bottom: 1.25rem;
 }
 
 .section-card__header h3 {
@@ -297,10 +299,10 @@ div[data-testid="stDataFrame"] [data-testid="StyledDataFrame"] {
 .results-card {
     background: var(--color-background-alt);
     border: 1px solid var(--color-border-light);
-    border-radius: 22px;
-    padding: 2rem 2.25rem 2.5rem 2.25rem;
-    box-shadow: 0 22px 46px rgba(180, 95, 77, 0.12);
-    margin: 2rem 0 3rem 0;
+    border-radius: 18px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 12px 28px rgba(180, 95, 77, 0.10);
+    margin: 1rem 0 1.5rem 0;
 }
 .results-card div[data-testid="stDataFrame"] {
     padding-top: 0.5rem;
@@ -330,6 +332,10 @@ def format_file_size(size_bytes: int) -> str:
 def display_results(result_df: pd.DataFrame, title: str, execution_time: float = None):
     """Display query results with download option and performance metrics."""
     if not result_df.empty:
+        # Persist latest results for re-renders and visualization state
+        st.session_state["last_result_df"] = result_df
+        st.session_state["last_result_title"] = title
+
         st.markdown("<div class='results-card'>", unsafe_allow_html=True)
         # Compact performance header
         performance_info = f"✅ {title}: {len(result_df):,} rows"
@@ -362,10 +368,12 @@ def display_results(result_df: pd.DataFrame, title: str, execution_time: float =
         height = min(600, max(200, len(result_df) * 35 + 50))  # Dynamic height based on rows
         st.dataframe(result_df, use_container_width=True, height=height)
 
+        # Render chart beneath the table
         render_visualization(result_df)
 
         st.markdown("</div>", unsafe_allow_html=True)
-
+        # Mark that we rendered results in this run to avoid double-render in persisted blocks
+        st.session_state["_rendered_this_run"] = True
     else:
         st.warning("⚠️ No results found")
 
@@ -397,6 +405,14 @@ def initialize_app_data():
         st.session_state.ai_error = ""
     if "show_edit_sql" not in st.session_state:
         st.session_state.show_edit_sql = False
+    # Initialize result persistence slots
+    st.session_state.setdefault("ai_query_result_df", None)
+    st.session_state.setdefault("manual_query_result_df", None)
+    st.session_state.setdefault("last_result_df", None)
+    st.session_state.setdefault("last_result_title", None)
+
+    # Reset per-run flags
+    st.session_state["_rendered_this_run"] = False
 
     # Check if we need to initialize data (avoid reinitializing on every rerun)
     if "app_initialized" not in st.session_state or not st.session_state.app_initialized:
@@ -645,12 +661,19 @@ def main():
                     unsafe_allow_html=True,
                 )
 
-    # Enhanced tab layout with ontology exploration
-    tab1, tab2, tab3 = st.tabs(["🔍 Query Builder", "🗺️ Data Ontology", "🔧 Advanced"])
+    # Enhanced tab layout with separate tabs for Manual SQL and Schema
+    tab_query, tab_manual, tab_ontology, tab_schema = st.tabs(
+        [
+            "🔍 Query Builder",
+            "🛠️ Manual SQL",
+            "️ Data Ontology",
+            "🗂️ Database Schema",
+        ]
+    )
 
     st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
 
-    with tab1:
+    with tab_query:
         st.markdown(
             """
         <div class='section-card'>
@@ -720,6 +743,8 @@ def main():
                 ai_generation_time = time.time() - start_time
                 st.session_state.generated_sql = sql_query
                 st.session_state.ai_error = error_msg
+                # Hide Edit panel on fresh generation to avoid empty editor gaps
+                st.session_state.show_edit_sql = False
 
                 # Log query for authenticated users
                 auth = get_auth_service()
@@ -743,10 +768,10 @@ def main():
         # Always show execute section, but conditionally enable
         st.markdown("---")
 
-        # Show generated SQL if available
+        # Show generated SQL in a compact expander to avoid taking vertical space
         if st.session_state.generated_sql:
-            st.markdown("### 🧠 AI-Generated SQL")
-            st.code(st.session_state.generated_sql, language="sql")
+            with st.expander("🧠 AI-Generated SQL", expanded=False):
+                st.code(st.session_state.generated_sql, language="sql")
 
         # Always show buttons, disable based on state
         col1, col2 = st.columns([3, 1])
@@ -768,6 +793,11 @@ def main():
                             st.session_state.get("parquet_files", []),
                         )
                         execution_time = time.time() - start_time
+                        # Hide Edit panel on execute to avoid empty editor gaps
+                        st.session_state.show_edit_sql = False
+                        # Persist AI results for re-renders
+                        st.session_state["ai_query_result_df"] = result_df
+                        st.session_state["last_result_tab"] = "tab1"
                         display_results(result_df, "AI Query Results", execution_time)
                     except Exception as e:
                         st.error(f"❌ Query execution failed: {str(e)}")
@@ -783,39 +813,54 @@ def main():
             if edit_button and has_sql:
                 st.session_state.show_edit_sql = True
 
-            # Edit SQL interface
-            if st.session_state.get("show_edit_sql", False):
-                st.markdown("### ✏️ Edit SQL Query")
-                edited_sql = st.text_area(
-                    "Modify the query:",
-                    value=st.session_state.generated_sql,
-                    height=150,
-                    key="edit_sql",
-                )
+        # (Edit panel moved to render AFTER results to avoid pre-results blank space)
 
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    if st.button("🚀 Run Edited Query", type="primary", use_container_width=True):
-                        with st.spinner("⚡ Running edited query..."):
-                            try:
-                                start_time = time.time()
-                                result_df = execute_sql_query(
-                                    edited_sql,
-                                    st.session_state.get("parquet_files", []),
-                                )
-                                execution_time = time.time() - start_time
-                                display_results(result_df, "Edited Query Results", execution_time)
-                            except Exception as e:
-                                st.error(f"❌ Query execution failed: {str(e)}")
-                                st.info("💡 Check your SQL syntax and try again")
-                with col2:
-                    if st.button("❌ Cancel", use_container_width=True):
-                        st.session_state.show_edit_sql = False
-                        st.rerun()
+        # If user requested editing, render panel after results so the layout stays compact
+        if st.session_state.get("show_edit_sql", False):
+            st.markdown("### ✏️ Edit SQL Query")
+            edited_sql = st.text_area(
+                "Modify the query:",
+                value=st.session_state.generated_sql,
+                height=150,
+                key="edit_sql",
+            )
+
+            run_col, cancel_col = st.columns([3, 1])
+            with run_col:
+                if st.button("🚀 Run Edited Query", type="primary", use_container_width=True):
+                    with st.spinner("⚡ Running edited query..."):
+                        try:
+                            start_time = time.time()
+                            result_df = execute_sql_query(
+                                edited_sql,
+                                st.session_state.get("parquet_files", []),
+                            )
+                            execution_time = time.time() - start_time
+                            # Collapse editor on success and show results
+                            st.session_state.show_edit_sql = False
+                            display_results(result_df, "Edited Query Results", execution_time)
+                        except Exception as e:
+                            st.error(f"❌ Query execution failed: {str(e)}")
+                            st.info("💡 Check your SQL syntax and try again")
+            with cancel_col:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.show_edit_sql = False
+                    st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with tab2:
+        # Persisted results rendering for AI tab: show last results across reruns
+        if (
+            st.session_state.get("last_result_tab") == "tab1"
+            and isinstance(st.session_state.get("last_result_df"), pd.DataFrame)
+            and not st.session_state.get("_rendered_this_run", False)
+        ):
+            display_results(
+                st.session_state["last_result_df"],
+                st.session_state.get("last_result_title", "Previous Results"),
+            )
+
+    with tab_ontology:
         st.markdown(
             """
         <div style='margin-bottom: 1.5rem;'>
@@ -823,7 +868,7 @@ def main():
                 🗺️ Data Ontology Explorer
             </h3>
             <p style='color: var(--color-text-secondary); margin: 0; font-size: 0.95rem;'>
-                Explore the structured organization of all 110+ data fields across 15 business domains
+                Explore the structured organization of your data by domain and field.
             </p>
         </div>
         """,
@@ -833,33 +878,29 @@ def main():
         # Import ontology data
         from src.data_dictionary import LOAN_ONTOLOGY, PORTFOLIO_CONTEXT
 
-        # Portfolio Overview
-        # st.markdown("### 📊 Portfolio Overview")
-        # col1, col2, col3 = st.columns(3)
-        # with col1:
-        #     st.metric(
-        #         label="📈 Total Coverage",
-        #         value=PORTFOLIO_CONTEXT['overview']['coverage'].split()[0] + " M loans"
-        #     )
-        # with col2:
-        #     st.metric(
-        #         label="📅 Data Vintage",
-        #         value=PORTFOLIO_CONTEXT['overview']['vintage_range']
+        # Optional quick search across all fields (kept because you liked this)
+        q = st.text_input(
+            "🔎 Quick search (field name or description)", key="ontology_quick_search", placeholder="e.g., CSCORE_B, OLTV, DTI"
+        ).strip().lower()
+        if q:
+            results = []
+            for domain_name, domain_info in LOAN_ONTOLOGY.items():
+                for fname, meta in domain_info.get("fields", {}).items():
+                    desc = getattr(meta, "description", "")
+                    dtype = getattr(meta, "data_type", "")
+                    if q in fname.lower() or q in str(desc).lower() or q in str(dtype).lower():
+                        results.append((domain_name, fname, desc, dtype))
+            if results:
+                st.markdown("#### 🔍 Search results")
+                for domain_name, fname, desc, dtype in results[:100]:
+                    st.markdown(f"• **{fname}** ({dtype}) — {desc}")
+                    st.caption(f"Domain: {domain_name.replace('_',' ').title()}")
+                st.markdown("---")
+            else:
+                st.info("No matching fields found.")
 
-        st.markdown("<div class='section-spacer'></div>", unsafe_allow_html=True)
-        #     )
-        st.markdown("---")
-        #     st.metric(
-        #         label="🎯 Loss Rate",
-        #         value=PORTFOLIO_CONTEXT['performance_summary']['lifetime_loss_rate']
-        #     )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Domain Explorer
+        # Domain Explorer (old format)
         st.markdown("### 🏗️ Ontological Domains")
-
-        # Create domain selection
         domain_names = list(LOAN_ONTOLOGY.keys())
         selected_domain = st.selectbox(
             "Choose a domain to explore:",
@@ -870,7 +911,7 @@ def main():
         if selected_domain:
             domain_info = LOAN_ONTOLOGY[selected_domain]
 
-            # Domain header
+            # Domain header card
             st.markdown(
                 f"""
             <div style='background: linear-gradient(135deg, var(--color-accent-primary) 0%, var(--color-accent-primary-darker) 100%);
@@ -886,38 +927,27 @@ def main():
                 unsafe_allow_html=True,
             )
 
-            # Fields in this domain
+            # Fields table
             st.markdown("#### 📋 Fields in this Domain")
-
             fields_data = []
             for field_name, field_meta in domain_info["fields"].items():
-                risk_indicator = "🔴" if field_meta.risk_impact else "🟢"
-
+                risk_indicator = "🔴" if getattr(field_meta, "risk_impact", None) else "🟢"
                 fields_data.append(
                     {
                         "Field": field_name,
                         "Risk": risk_indicator,
-                        "Description": field_meta.description,
+                        "Description": getattr(field_meta, "description", ""),
                         "Business Context": (
-                            field_meta.business_context[:100] + "..."
-                            if len(field_meta.business_context) > 100
-                            else field_meta.business_context
+                            (getattr(field_meta, "business_context", "") or "")[:100] + ("..." if len(getattr(field_meta, "business_context", "")) > 100 else "")
                         ),
                     }
                 )
 
-            # Display fields table
             fields_df = pd.DataFrame(fields_data)
             st.dataframe(
                 fields_df,
-                width="stretch",
+                use_container_width=True,
                 hide_index=True,
-                column_config={
-                    "Field": st.column_config.TextColumn(width="medium"),
-                    "Risk": st.column_config.TextColumn(width="small"),
-                    "Description": st.column_config.TextColumn(width="large"),
-                    "Business Context": st.column_config.TextColumn(width="large"),
-                },
             )
 
             # Field detail explorer
@@ -931,36 +961,27 @@ def main():
 
             if selected_field:
                 field_meta = domain_info["fields"][selected_field]
-
-                # Field details card
                 st.markdown(
                     f"""
                 <div style='background: var(--color-background-alt); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--color-accent-primary-darker);'>
                     <h5 style='color: var(--color-text-primary); margin-top: 0;'>{selected_field}</h5>
-                    <p><strong>Domain:</strong> {field_meta.domain}</p>
-                    <p><strong>Data Type:</strong> <code>{field_meta.data_type}</code></p>
-                    <p><strong>Description:</strong> {field_meta.description}</p>
-                    <p><strong>Business Context:</strong> {field_meta.business_context}</p>
+                    <p><strong>Domain:</strong> {getattr(field_meta, 'domain', selected_domain)}</p>
+                    <p><strong>Data Type:</strong> <code>{getattr(field_meta, 'data_type', '')}</code></p>
+                    <p><strong>Description:</strong> {getattr(field_meta, 'description', '')}</p>
+                    <p><strong>Business Context:</strong> {getattr(field_meta, 'business_context', '')}</p>
                 </div>
                 """,
                     unsafe_allow_html=True,
                 )
 
-                # Risk impact if present
-                if field_meta.risk_impact:
-                    st.warning(f"⚠️ **Risk Impact:** {field_meta.risk_impact}")
-
-                # Values/codes if present
-                if field_meta.values:
+                if getattr(field_meta, "risk_impact", None):
+                    st.warning(f"⚠️ **Risk Impact:** {getattr(field_meta, 'risk_impact', '')}")
+                if getattr(field_meta, "values", None):
                     st.markdown("**Value Codes:**")
-                    for code, description in field_meta.values.items():
+                    for code, description in getattr(field_meta, "values", {}).items():
                         st.markdown(f"• `{code}`: {description}")
-
-                # Relationships if present
-                if field_meta.relationships:
-                    st.info(f"🔗 **Relationships:** {', '.join(field_meta.relationships)}")
-
-        # Risk Framework Summary
+                if getattr(field_meta, "relationships", None):
+                    st.info(f"🔗 **Relationships:** {', '.join(getattr(field_meta, 'relationships', []))}")
         st.markdown("### ⚖️ Risk Assessment Framework")
         st.markdown(
             f"""
@@ -976,101 +997,132 @@ def main():
             unsafe_allow_html=True,
         )
 
-    with tab3:
+    with tab_manual:
         st.markdown(
             """
         <div style='margin-bottom: 1.5rem;'>
             <h3 style='color: var(--color-text-primary); font-weight: 400; margin-bottom: 0.5rem;'>
-                🔧 Advanced Options
+                🛠️ Manual SQL Query
             </h3>
             <p style='color: var(--color-text-secondary); margin: 0; font-size: 0.95rem;'>
-                Manual SQL queries and database schema exploration
+                Write and execute SQL directly against the in-memory DuckDB table <code>data</code>.
             </p>
         </div>
         """,
             unsafe_allow_html=True,
         )
 
-        col1, col2 = st.columns([2, 1])
+        # Sample queries for manual use
+        sample_queries = {
+            "": "",
+            "Total Portfolio": "SELECT COUNT(*) as total_loans, ROUND(SUM(ORIG_UPB)/1000000, 2) as total_upb_millions FROM data",
+            "Geographic Analysis": "SELECT STATE, COUNT(*) as loan_count, ROUND(AVG(ORIG_UPB), 0) as avg_upb, ROUND(AVG(ORIG_RATE), 2) as avg_rate FROM data WHERE STATE IS NOT NULL GROUP BY STATE ORDER BY loan_count DESC LIMIT 10",
+            "Credit Risk": "SELECT CASE WHEN CSCORE_B < 620 THEN 'Subprime' WHEN CSCORE_B < 680 THEN 'Near Prime' WHEN CSCORE_B < 740 THEN 'Prime' ELSE 'Super Prime' END as credit_tier, COUNT(*) as loans, ROUND(AVG(OLTV), 1) as avg_ltv FROM data WHERE CSCORE_B IS NOT NULL GROUP BY credit_tier ORDER BY MIN(CSCORE_B)",
+            "High LTV Analysis": "SELECT STATE, COUNT(*) as high_ltv_loans, ROUND(AVG(CSCORE_B), 0) as avg_credit_score FROM data WHERE OLTV > 90 AND STATE IS NOT NULL GROUP BY STATE HAVING COUNT(*) > 100 ORDER BY high_ltv_loans DESC",
+        }
 
-        with col1:
-            st.markdown("### 🛠️ Manual SQL Query")
+        # Sync selection -> textarea using session state to persist on reruns
+        def _update_manual_sql():
+            sel = st.session_state.get("manual_sample_query", "")
+            st.session_state["manual_sql_text"] = sample_queries.get(sel, "")
 
-            # Sample queries for manual use
-            sample_queries = {
-                "": "",
-                "Total Portfolio": "SELECT COUNT(*) as total_loans, ROUND(SUM(ORIG_UPB)/1000000, 2) as total_upb_millions FROM data",
-                "Geographic Analysis": "SELECT STATE, COUNT(*) as loan_count, ROUND(AVG(ORIG_UPB), 0) as avg_upb, ROUND(AVG(ORIG_RATE), 2) as avg_rate FROM data WHERE STATE IS NOT NULL GROUP BY STATE ORDER BY loan_count DESC LIMIT 10",
-                "Credit Risk": "SELECT CASE WHEN CSCORE_B < 620 THEN 'Subprime' WHEN CSCORE_B < 680 THEN 'Near Prime' WHEN CSCORE_B < 740 THEN 'Prime' ELSE 'Super Prime' END as credit_tier, COUNT(*) as loans, ROUND(AVG(OLTV), 1) as avg_ltv FROM data WHERE CSCORE_B IS NOT NULL GROUP BY credit_tier ORDER BY MIN(CSCORE_B)",
-                "High LTV Analysis": "SELECT STATE, COUNT(*) as high_ltv_loans, ROUND(AVG(CSCORE_B), 0) as avg_credit_score FROM data WHERE OLTV > 90 AND STATE IS NOT NULL GROUP BY STATE HAVING COUNT(*) > 100 ORDER BY high_ltv_loans DESC",
-            }
+        selected_sample = st.selectbox(
+            "📋 Choose a sample query:", list(sample_queries.keys()), key="manual_sample_query", on_change=_update_manual_sql
+        )
 
-            selected_sample = st.selectbox("📋 Choose a sample query:", list(sample_queries.keys()))
+        # Keep a compact, consistent editor area to avoid large empty gaps
+        manual_sql = st.text_area(
+            "Write your SQL query:",
+            value=st.session_state.get("manual_sql_text", sample_queries[selected_sample]),
+            height=140,
+            placeholder="SELECT * FROM data LIMIT 10",
+            help="Use 'data' as the table name",
+            key="manual_sql_text",
+        )
 
-            manual_sql = st.text_area(
-                "Write your SQL query:",
-                value=sample_queries[selected_sample],
-                height=200,
-                placeholder="SELECT * FROM data LIMIT 10",
-                help="Use 'data' as the table name",
+        # Always show execute button, disable if no query
+        has_manual_sql = bool(manual_sql.strip())
+        execute_manual = st.button(
+            "🚀 Execute Manual Query",
+            type="primary",
+            use_container_width=True,
+            disabled=not has_manual_sql,
+            help="Enter SQL query above to execute" if not has_manual_sql else None,
+            key="execute_manual_button",
+        )
+
+        if execute_manual and has_manual_sql:
+            with st.spinner("⚡ Running manual query..."):
+                start_time = time.time()
+                result_df = execute_sql_query(manual_sql, st.session_state.get("parquet_files", []))
+                execution_time = time.time() - start_time
+                # Persist for re-renders and visualization
+                st.session_state["manual_query_result_df"] = result_df
+                st.session_state["last_result_tab"] = "tab_manual"
+                display_results(result_df, "Manual Query Results", execution_time)
+
+        # Persisted results rendering for Manual SQL tab: show last results across reruns
+        if (
+            st.session_state.get("last_result_tab") == "tab_manual"
+            and isinstance(st.session_state.get("last_result_df"), pd.DataFrame)
+            and not st.session_state.get("_rendered_this_run", False)
+        ):
+            display_results(
+                st.session_state["last_result_df"],
+                st.session_state.get("last_result_title", "Previous Results"),
             )
 
-            # Always show execute button, disable if no query
-            has_manual_sql = bool(manual_sql.strip())
-            execute_manual = st.button(
-                "🚀 Execute Manual Query",
-                type="primary",
-                width="stretch",
-                disabled=not has_manual_sql,
-                help="Enter SQL query above to execute" if not has_manual_sql else None,
-            )
+    with tab_schema:
+        st.markdown(
+            """
+            <div style='margin-bottom: 1.5rem;'>
+                <h3 style='color: var(--color-text-primary); font-weight: 400; margin-bottom: 0.5rem;'>
+                    🗂️ Database Schema
+                </h3>
+                <p style='color: var(--color-text-secondary); margin: 0; font-size: 0.95rem;'>
+                    Explore the physical schema and ontology-aligned views.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            if execute_manual and has_manual_sql:
-                with st.spinner("⚡ Running manual query..."):
-                    start_time = time.time()
-                    result_df = execute_sql_query(manual_sql, st.session_state.get("parquet_files", []))
-                    execution_time = time.time() - start_time
-                    display_results(result_df, "Manual Query Results", execution_time)
+        # Schema presentation options
+        schema_view = st.radio(
+            "Choose schema view:",
+            ["🎯 Quick Reference", "📋 Ontological Schema", "💻 Raw SQL"],
+            horizontal=True,
+        )
 
-        with col2:
-            st.markdown("### 📊 Database Schema")
+        schema_context = st.session_state.get("schema_context", "")
 
-            # Schema presentation options
-            schema_view = st.radio(
-                "Choose schema view:",
-                ["🎯 Quick Reference", "📋 Ontological Schema", "💻 Raw SQL"],
-                horizontal=True,
-            )
+        if schema_view == "🎯 Quick Reference":
+            # Quick reference with domain summary
+            from src.data_dictionary import LOAN_ONTOLOGY
 
-            schema_context = st.session_state.get("schema_context", "")
+            st.markdown("#### Key Data Domains")
 
-            if schema_view == "🎯 Quick Reference":
-                # Quick reference with domain summary
-                from src.data_dictionary import LOAN_ONTOLOGY
+            # Create a compact domain overview
+            for i in range(0, len(LOAN_ONTOLOGY), 3):  # Display in rows of 3
+                cols = st.columns(3)
+                domains = list(LOAN_ONTOLOGY.items())[i : i + 3]
 
-                st.markdown("#### Key Data Domains")
+                for j, (domain_name, domain_info) in enumerate(domains):
+                    with cols[j]:
+                        field_count = len(domain_info["fields"])
 
-                # Create a compact domain overview
-                for i in range(0, len(LOAN_ONTOLOGY), 3):  # Display in rows of 3
-                    cols = st.columns(3)
-                    domains = list(LOAN_ONTOLOGY.items())[i : i + 3]
+                        # Create colored cards for each domain
+                        colors = [
+                            "#F3E5D9",
+                            "#E7C8B2",
+                            "#F6EDE2",
+                            "#E4C590",
+                            "#ECD9C7",
+                        ]
+                        color = colors[i // 3 % len(colors)]
 
-                    for j, (domain_name, domain_info) in enumerate(domains):
-                        with cols[j]:
-                            field_count = len(domain_info["fields"])
-
-                            # Create colored cards for each domain
-                            colors = [
-                                "#F3E5D9",
-                                "#E7C8B2",
-                                "#F6EDE2",
-                                "#E4C590",
-                                "#ECD9C7",
-                            ]
-                            color = colors[i // 3 % len(colors)]
-
-                            st.markdown(
-                                f"""
+                        st.markdown(
+                            f"""
                             <div style='background: {color}; color: var(--color-text-primary); padding: 1rem;
                                         border-radius: 8px; margin-bottom: 0.5rem; text-align: center; border: 1px solid var(--color-border-light);'>
                                 <h5 style='margin: 0; font-size: 0.9rem;'>{domain_name.replace('_', ' ').title()}</h5>
@@ -1079,74 +1131,75 @@ def main():
                                 </p>
                             </div>
                             """,
-                                unsafe_allow_html=True,
-                            )
+                            unsafe_allow_html=True,
+                        )
 
-                # Sample fields reference
-                st.markdown("#### 🔍 Common Fields")
-                key_fields = {
-                    "LOAN_ID": "Unique loan identifier",
-                    "ORIG_DATE": "Origination date (MMYYYY)",
-                    "STATE": "State code (e.g., 'CA', 'TX')",
-                    "CSCORE_B": "Primary borrower FICO score",
-                    "OLTV": "Original loan-to-value ratio (%)",
-                    "DTI": "Debt-to-income ratio (%)",
-                    "ORIG_UPB": "Original unpaid balance ($)",
-                    "CURRENT_UPB": "Current unpaid balance ($)",
-                    "PURPOSE": "P=Purchase, R=Refi, C=CashOut",
-                }
+            # Sample fields reference
+            st.markdown("#### 🔍 Common Fields")
+            key_fields = {
+                "LOAN_ID": "Unique loan identifier",
+                "ORIG_DATE": "Origination date (MMYYYY)",
+                "STATE": "State code (e.g., 'CA', 'TX')",
+                "CSCORE_B": "Primary borrower FICO score",
+                "OLTV": "Original loan-to-value ratio (%)",
+                "DTI": "Debt-to-income ratio (%)",
+                "ORIG_UPB": "Original unpaid balance ($)",
+                "CURRENT_UPB": "Current unpaid balance ($)",
+                "PURPOSE": "P=Purchase, R=Refi, C=CashOut",
+            }
 
-                field_cols = st.columns(2)
-                field_items = list(key_fields.items())
-                for i, (field, desc) in enumerate(field_items):
-                    col_idx = i % 2
-                    with field_cols[col_idx]:
-                        st.markdown(f"• **{field}**: {desc}")
+            field_cols = st.columns(2)
+            field_items = list(key_fields.items())
+            for i, (field, desc) in enumerate(field_items):
+                col_idx = i % 2
+                with field_cols[col_idx]:
+                    st.markdown(f"• **{field}**: {desc}")
 
-            elif schema_view == "📋 Ontological Schema":
-                # Organized schema by domains
+        elif schema_view == "📋 Ontological Schema":
+            # Organized schema by domains
+            if schema_context:
+                # Extract the organized parts of the schema
+                lines = schema_context.split("\n")
+                in_create_table = False
+                current_section = []
+                sections = []
+
+                for line in lines:
+                    if "CREATE TABLE" in line:
+                        if current_section:
+                            sections.append("\n".join(current_section))
+                        current_section = [line]
+                        in_create_table = True
+                    elif in_create_table:
+                        current_section.append(line)
+                        if line.strip() == ");":
+                            in_create_table = False
+                    elif not in_create_table and line.strip():
+                        current_section.append(line)
+
+                if current_section:
+                    sections.append("\n".join(current_section))
+
+                # Display each section with better formatting
+                for i, section in enumerate(sections):
+                    if "CREATE TABLE" in section:
+                        table_name = section.split("CREATE TABLE ")[1].split(" (")[0]
+                        with st.expander(f"📊 Table: {table_name.upper()}", expanded=i == 0):
+                            st.code(section, language="sql")
+                    elif section.strip():
+                        with st.expander("📚 Business Intelligence Context", expanded=False):
+                            st.text(section)
+            else:
+                st.warning("Schema not available")
+
+        else:  # Raw SQL
+            # Raw SQL schema view
+            with st.expander("🗂️ Complete SQL Schema", expanded=False):
                 if schema_context:
-                    # Extract the organized parts of the schema
-                    lines = schema_context.split("\n")
-                    in_create_table = False
-                    current_section = []
-                    sections = []
-
-                    for line in lines:
-                        if "CREATE TABLE" in line:
-                            if current_section:
-                                sections.append("\n".join(current_section))
-                            current_section = [line]
-                            in_create_table = True
-                        elif in_create_table:
-                            current_section.append(line)
-                            if line.strip() == ");":
-                                in_create_table = False
-                        elif not in_create_table and line.strip():
-                            current_section.append(line)
-
-                    if current_section:
-                        sections.append("\n".join(current_section))
-
-                    # Display each section with better formatting
-                    for i, section in enumerate(sections):
-                        if "CREATE TABLE" in section:
-                            table_name = section.split("CREATE TABLE ")[1].split(" (")[0]
-                            with st.expander(f"📊 Table: {table_name.upper()}", expanded=i == 0):
-                                st.code(section, language="sql")
-                        elif section.strip():
-                            with st.expander("📚 Business Intelligence Context", expanded=False):
-                                st.text(section)
+                    st.code(schema_context, language="sql")
                 else:
                     st.warning("Schema not available")
 
-            else:  # Raw SQL
-                # Raw SQL schema view
-                with st.expander("🗂️ Complete SQL Schema", expanded=False):
-                    if schema_context:
-                        st.code(schema_context, language="sql")
-                    else:
-                        st.warning("Schema not available")
 
     # Professional footer with enhanced styling
     st.markdown("<div style='margin-top: 3rem;'></div>", unsafe_allow_html=True)

@@ -16,7 +16,7 @@ anthropic>=0.40.0
 google-generativeai>=0.3.0  # For Gemini support
 
 # Authentication (Google OAuth)
-requests>=2.31.0
+requests
 
 # Testing and development
 pytest>=7.4.0
