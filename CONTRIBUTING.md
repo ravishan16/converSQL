@@ -83,6 +83,15 @@ black src/ app.py
 flake8 src/ app.py --max-line-length=100
 ```
 
+### Package layout (v2)
+
+The repository is introducing a modular core under `conversql/` while keeping `src/` as legacy during migration.
+
+- `conversql/`: AI, data catalog, ontology, exec engines
+- `src/`: existing modules used by the app and tests
+
+For new code, prefer `conversql.*` imports. See `docs/ARCHITECTURE_V2.md` and `docs/MIGRATION.md`.
+
 ### Front-end Styling
 
 When updating Streamlit UI components:

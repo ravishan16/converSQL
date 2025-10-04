@@ -30,6 +30,7 @@ help:
 	@echo "  check-deps   Check for dependency updates"
 	@echo "  setup        Complete setup for new development environment"
 	@echo "  ci           Run full CI checks (format, lint, test)"
+	@echo "  clean-unused Remove deprecated/unused files safely (dry run; add APPLY=1 to delete)"
 	@echo ""
 	@echo "Usage: make <command>"
 
@@ -170,3 +171,8 @@ ci: clean format-check lint test-cov
 	@echo "✅ All CI checks passed!"
 	@echo ""
 	@echo "Ready to commit and push!"
+
+# Remove deprecated/unused files safely
+clean-unused:
+	@echo "🧹 Scanning for unused legacy files..."
+	@bash scripts/cleanup_unused_files.sh $(if $(APPLY),--apply,)

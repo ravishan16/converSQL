@@ -11,6 +11,7 @@ import streamlit as st
 from .branding import get_logo_data_uri
 from .core import get_ai_service_status
 from .simple_auth import get_auth_service, handle_oauth_callback
+from .ui import render_app_footer
 
 
 def render_login_page():
@@ -248,30 +249,7 @@ def render_login_page():
         else:
             ai_provider_text = "Manual Analysis Mode"
 
-        st.markdown("---")
-        st.markdown(
-            f"""
-        <div style='background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background-alt) 100%);
-                    border-top: 1px solid var(--color-border-light); padding: 2rem; margin-top: 2rem;
-                    text-align: center; border-radius: 0 0 8px 8px;'>
-            <div style='color: var(--color-text-primary); font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem;'>
-                💬 converSQL - Natural Language to SQL Query Generation Platform
-            </div>
-            <div style='color: var(--color-text-secondary); font-size: 0.8rem; line-height: 1.4;'>
-                Powered by <strong>Streamlit</strong> • <strong>DuckDB</strong> • <strong>{ai_provider_text}</strong> • <strong>Ontological Data Intelligence</strong><br>
-                <span style='font-size: 0.75rem; opacity: 0.8;'>
-                    Implementation Showcase: Single Family Loan Analytics
-                </span>
-            </div>
-            <div class='footer-links'>
-                <a href='https://github.com/ravishan16/converSQL' target='_blank' rel='noopener noreferrer'>GitHub Repository</a>
-                <a href='https://github.com/ravishan16/converSQL/issues' target='_blank' rel='noopener noreferrer'>Issue Tracker</a>
-                <a href='https://github.com/ravishan16/converSQL/pulls' target='_blank' rel='noopener noreferrer'>Pull Requests</a>
-            </div>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
+        render_app_footer(ai_provider_text)
 
 
 def render_user_menu():

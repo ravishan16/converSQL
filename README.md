@@ -1,3 +1,10 @@
+## New Documentation
+
+We have introduced new documentation to help you understand the modular architecture and migration path.
+
+Please refer to the following documents:
+- [Architecture v2: Modular Layout](docs/ARCHITECTURE_V2.md)
+- [Migration Guide](docs/MIGRATION.md)
 
 <p align="center">
    <img src="assets/conversql_logo.svg" alt="converSQL logo" width="360" />

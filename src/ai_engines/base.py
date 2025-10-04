@@ -3,6 +3,8 @@ Base AI Engine Adapter Interface
 Defines the contract for all AI engine adapters in converSQL.
 """
 
+import os
+import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
 
@@ -29,6 +31,11 @@ class AIEngineAdapter(ABC):
         """
         self.config = config or {}
         self._initialize()
+
+        # Rate limiting state
+        self._requests = []  # type: list[float]
+        self._max_requests_per_minute = int(os.getenv("AI_MAX_REQUESTS_PER_MINUTE", "20"))
+        self._request_window = 60  # 1 minute window
 
     @abstractmethod
     def _initialize(self) -> None:
@@ -63,9 +70,20 @@ class AIEngineAdapter(ABC):
         pass
 
     @abstractmethod
+    def _generate_sql_impl(self, prompt: str) -> Tuple[str, str]:
+        """
+        Internal implementation of SQL generation.
+
+        To be implemented by subclasses.
+        """
+        raise NotImplementedError("Subclasses must implement _generate_sql_impl")
+
     def generate_sql(self, prompt: str) -> Tuple[str, str]:
         """
         Generate SQL query from natural language prompt.
+
+        This method wraps _generate_sql_impl with rate limiting
+        and error handling.
 
         Args:
             prompt: Complete prompt including schema context, business rules,
@@ -84,7 +102,23 @@ class AIEngineAdapter(ABC):
 
         Error messages should be user-friendly and actionable.
         """
-        pass
+        # Check rate limits first
+        is_allowed, error_msg = self._check_rate_limit()
+        if not is_allowed:
+            return "", error_msg
+
+        try:
+            # Generate SQL and record the request
+            sql_query, error_msg = self._generate_sql_impl(prompt)
+            if sql_query and not error_msg:
+                self._record_request()
+            return sql_query, error_msg
+
+        except Exception as e:
+            error_msg = f"Error generating SQL: {str(e)}"
+            return "", error_msg
+
+    # Implementation for _generate_sql_impl moved to abstract method above
 
     @property
     @abstractmethod
@@ -123,6 +157,33 @@ class AIEngineAdapter(ABC):
         Default implementation returns empty dict; override for model-specific info.
         """
         return {}
+
+    def _check_rate_limit(self) -> Tuple[bool, str]:
+        """
+        Check if the current request would exceed rate limits.
+
+        Returns:
+            Tuple[bool, str]: (is_allowed, error_message)
+            - On allowed: (True, "")
+            - On blocked: (False, error_description)
+        """
+        current_time = time.time()
+
+        # Remove old requests outside the window
+        self._requests = [t for t in self._requests if current_time - t < self._request_window]
+
+        if len(self._requests) >= self._max_requests_per_minute:
+            wait_time = self._request_window - (current_time - self._requests[0])
+            return False, f"Rate limit exceeded. Please wait {int(wait_time)} seconds."
+
+        return True, ""
+
+    def _record_request(self):
+        """Record a successful request for rate limiting."""
+        self._requests.append(time.time())
+        # Trim list to prevent memory growth
+        if len(self._requests) > self._max_requests_per_minute * 2:
+            self._requests = self._requests[-self._max_requests_per_minute :]
 
     def validate_response(self, sql: str) -> Tuple[bool, str]:
         """

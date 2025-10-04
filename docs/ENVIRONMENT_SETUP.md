@@ -15,6 +15,9 @@ PYTHONPATH=/app
 PROCESSED_DATA_DIR=data/processed/
 CACHE_TTL=3600
 FORCE_DATA_REFRESH=false
+DATASET_ROOT=data/processed/
+DATASET_PLUGIN=
+ONTOLOGY_PLUGIN=
 ```
 
 ### AI Provider Configuration
