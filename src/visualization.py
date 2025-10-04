@@ -325,7 +325,15 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
 
     Does not mutate the provided DataFrame when applying sorting.
     """
-    st.markdown("#### Chart")
+    st.markdown(
+        """
+        <div class='section-card__header'>
+            <h3>📊 Data Visualization</h3>
+            <p>Explore your query results through interactive charts</p>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Input validation with helpful messages
     if df is None:
@@ -365,6 +373,7 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         st.session_state[sort_dir_key] = "Ascending"
 
     # Render control UI with smart layout
+    st.markdown("<div class='control-group'>", unsafe_allow_html=True)
     ctrl_col1, ctrl_col2 = st.columns(2)
     with ctrl_col1:
         st.selectbox(
@@ -376,16 +385,26 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         )
     with ctrl_col2:
         st.selectbox("X-axis", cols, index=_safe_index(cols, x_col), key=keys["x"], help="Select X-axis column")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Handle Y-axis and color in compact layout
+    st.markdown("<div class='control-group chart-controls'>", unsafe_allow_html=True)
     y_color_cols = st.columns(2)
     if chart_type == "Histogram":
         with y_color_cols[0]:
-            st.caption("Y-axis not required for Histogram (uses count())")
-            st.empty()
+            st.markdown(
+                """
+                <div class='disabled-control'>
+                    <label>Y-axis</label>
+                    <div class='info-text'>Not required for Histogram (uses count)</div>
+                </div>
+            """,
+                unsafe_allow_html=True,
+            )
     else:
         with y_color_cols[0]:
             st.selectbox("Y-axis", cols, index=_safe_index(cols, y_col), key=keys["y"], help="Select Y-axis column")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Color selector with None option
     color_options = [None] + list(cols)
@@ -400,6 +419,7 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         )
 
     # Sort controls
+    st.markdown("<div class='control-group'>", unsafe_allow_html=True)
     sort_by_options = [None] + list(cols)
     sort_cols = st.columns(2)
     with sort_cols[0]:
@@ -413,6 +433,7 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         )
     with sort_cols[1]:
         st.selectbox("Sort direction", ["Ascending", "Descending"], key=sort_dir_key)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Build current parameter set
     current_params = {

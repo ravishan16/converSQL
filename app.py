@@ -769,15 +769,22 @@ def main():
             st.session_state.ai_error = ""
 
         # Always show execute section, but conditionally enable
-        st.markdown("---")
+        st.markdown(
+            """
+            <div style='border-top: 1px solid var(--color-border-light); margin: 1.5rem 0;'></div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         # Show generated SQL in a compact expander to avoid taking vertical space
         if st.session_state.generated_sql:
             with st.expander("🧠 AI-Generated SQL", expanded=False):
                 st.code(st.session_state.generated_sql, language="sql")
 
-        # Always show buttons, disable based on state
+        # Action buttons with consistent styling
+        st.markdown("<div class='query-actions'>", unsafe_allow_html=True)
         col1, col2 = st.columns([3, 1])
+
         with col1:
             has_sql = bool(st.session_state.generated_sql.strip()) if st.session_state.generated_sql else False
             execute_button = st.button(
@@ -1023,9 +1030,12 @@ def main():
         )
 
         # Sample queries for manual use
+        # Sample queries for manual use
         sample_queries = {
             "": "",
-            "Total Portfolio": "SELECT COUNT(*) as total_loans, ROUND(SUM(ORIG_UPB)/1000000, 2) as total_upb_millions FROM data",
+            "Total Portfolio": (
+                "SELECT COUNT(*) as total_loans, ROUND(SUM(ORIG_UPB)/1000000, 2) " "as total_upb_millions FROM data"
+            ),
             "Geographic Analysis": "SELECT STATE, COUNT(*) as loan_count, ROUND(AVG(ORIG_UPB), 0) as avg_upb, ROUND(AVG(ORIG_RATE), 2) as avg_rate FROM data WHERE STATE IS NOT NULL GROUP BY STATE ORDER BY loan_count DESC LIMIT 10",
             "Credit Risk": "SELECT CASE WHEN CSCORE_B < 620 THEN 'Subprime' WHEN CSCORE_B < 680 THEN 'Near Prime' WHEN CSCORE_B < 740 THEN 'Prime' ELSE 'Super Prime' END as credit_tier, COUNT(*) as loans, ROUND(AVG(OLTV), 1) as avg_ltv FROM data WHERE CSCORE_B IS NOT NULL GROUP BY credit_tier ORDER BY MIN(CSCORE_B)",
             "High LTV Analysis": "SELECT STATE, COUNT(*) as high_ltv_loans, ROUND(AVG(CSCORE_B), 0) as avg_credit_score FROM data WHERE OLTV > 90 AND STATE IS NOT NULL GROUP BY STATE HAVING COUNT(*) > 100 ORDER BY high_ltv_loans DESC",

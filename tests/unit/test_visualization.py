@@ -68,9 +68,7 @@ def test_make_chart_color(sample_df):
     chart = make_chart(sample_df, "Scatter", "A", "B", color="B")
     assert chart is not None
     assert chart.encoding.color is not None
-    assert chart.encoding.color.shorthand == "B"
-
-    # Test invalid color
+    assert chart.encoding.color.shorthand == "B"  # Test invalid color
     chart = make_chart(sample_df, "Bar", "C", "A", color="Missing")
     assert chart is None
 
