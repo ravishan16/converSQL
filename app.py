@@ -29,6 +29,7 @@ from src.simple_auth import get_auth_service
 # Import authentication
 from src.simple_auth_components import simple_auth_wrapper
 from src.ui import render_app_footer
+from src.ui.style_optimized import load_css
 from src.visualization import render_visualization
 
 # Configure page with professional styling
@@ -41,277 +42,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Professional CSS styling
-st.markdown(
-    """
-<style>
-:root {
-    --color-background: #FAF6F0;
-    --color-background-alt: #FDFDFD;
-    --color-text-primary: #3A3A3A;
-    --color-text-secondary: #7C6F64;
-    --color-accent-primary: #DDBEA9;
-    --color-accent-primary-darker: #B45F4D;
-    --color-border-light: #E4C590;
-    --color-tag-bg: #E4C590;
-    --color-tag-text: #3A3A3A;
-    --color-footer-bg: #FAF6F0;
-    --color-footer-text: #7C6F64;
-    --color-footer-link-hover: #DDBEA9;
-    --color-success-bg: #F4E8DC;
-    --color-success-border: #E4C590;
-    --color-success-text: #3A3A3A;
-    --color-warning-bg: #F9E7CE;
-    --color-warning-border: #E4C590;
-    --color-warning-text: #7C6F64;
-}
-
-body {
-    background: var(--color-background);
-    color: var(--color-text-secondary);
-}
-
-.main .block-container {
-    padding: 1.25rem 1.75rem 1.75rem 1.75rem;
-    background: var(--color-background);
-    max-width: 1360px;
-    margin: 0 auto;
-}
-
-.stTabs [data-baseweb="tab-list"] {
-    gap: 0.5rem;
-    background: none;
-    border-bottom: 1px solid var(--color-border-light);
-}
-
-.stTabs [data-baseweb="tab"] {
-    background: linear-gradient(160deg, var(--color-background-alt) 0%, var(--color-background) 100%);
-    border: 1px solid var(--color-border-light);
-    border-radius: 8px 8px 0 0;
-    color: var(--color-text-secondary);
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    margin: 0 0.25rem;
-    border-bottom: none;
-}
-
-.stTabs [aria-selected="true"] {
-    background: linear-gradient(150deg, var(--color-accent-primary) 0%, var(--color-accent-primary-darker) 100%);
-    color: var(--color-background-alt);
-    border-color: var(--color-accent-primary-darker);
-    box-shadow: 0 4px 12px rgba(180, 95, 77, 0.25);
-}
-
-.metric-card {
-    background-color: var(--color-background-alt);
-    border: 1px solid var(--color-border-light);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-}
-
-.stSelectbox > div > div,
-.stTextArea > div > div {
-    border-radius: 0.5rem;
-    border-color: var(--color-border-light) !important;
-    box-shadow: none !important;
-}
-
-.stButton > button {
-    border-radius: 0.5rem;
-    font-weight: 500;
-    background: var(--color-accent-primary);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-accent-primary-darker);
-    padding: 0.6rem 1rem;
-}
-
-.stButton > button:hover {
-    background: var(--color-accent-primary-darker);
-    color: var(--color-background-alt);
-}
-
-.stSuccess {
-    background-color: var(--color-success-bg);
-    border-color: var(--color-success-border);
-    color: var(--color-success-text);
-}
-
-.stWarning {
-    background-color: var(--color-warning-bg);
-    border-color: var(--color-warning-border);
-    color: var(--color-warning-text);
-}
-
-div[data-testid="stDataFrame"],
-div[data-testid="stDataFrame"] > div,
-div[data-testid="stDataFrame"] [data-testid="stVerticalBlock"],
-div[data-testid="stDataFrame"] [data-testid="stHorizontalBlock"],
-div[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-}
-
-div[data-testid="stDataFrame"] table {
-    width: 100% !important;
-}
-
-div[data-testid="stDataFrame"] [data-testid="StyledDataFrame"] {
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-.footer-links {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-}
-
-.footer-links a {
-    color: var(--color-accent-primary-darker);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.85rem;
-}
-
-.footer-links a:hover {
-    color: var(--color-footer-link-hover);
-}
-
-.brand-logo {
-    display: flex;
-    justify-content: center;
-    margin: 0 auto 2.5rem auto;
-    max-width: 640px;
-    padding: 0.5rem 1rem 0 1rem;
-}
-
-.brand-logo img {
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 18px 36px rgba(180, 95, 77, 0.22));
-}
-
-
-.sidebar-logo {
-    display: flex;
-    justify-content: center;
-    margin: 0 0 1.25rem 0;
-    padding: 0.35rem 0.75rem 0 0.75rem;
-}
-
-.sidebar-logo img {
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 12px 24px rgba(180, 95, 77, 0.18));
-}
-
-
-.sidebar-hero {
-    margin: 0 0 1.5rem 0;
-    padding: 1.35rem 1.2rem 1.4rem 1.2rem;
-    background: var(--color-background-alt);
-    border: 1px solid var(--color-border-light);
-    border-radius: 16px;
-    box-shadow: 0 10px 24px rgba(180, 95, 77, 0.12);
-}
-
-.sidebar-hero__eyebrow {
-    display: block;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-size: 0.7rem;
-    margin-bottom: 0.55rem;
-}
-
-.sidebar-hero__title {
-    color: var(--color-text-primary);
-    font-weight: 500;
-    font-size: 1.35rem;
-    margin: 0 0 0.5rem 0;
-}
-
-.sidebar-hero__subhead {
-    color: var(--color-text-secondary);
-    font-size: 0.92rem;
-    line-height: 1.4;
-    margin: 0 0 0.75rem 0;
-}
-
-.sidebar-hero__pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 0.95rem;
-    border-radius: 999px;
-    background: rgba(221, 190, 169, 0.18);
-    border: 1px solid rgba(221, 190, 169, 0.45);
-    font-weight: 500;
-}
-
-.sidebar-hero__pill-label {
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 0.65rem;
-}
-
-.sidebar-hero__pill-value {
-    color: var(--color-accent-primary-darker);
-    font-weight: 600;
-}
-
-.section-card {
-    background: var(--color-background-alt);
-    border: 1px solid var(--color-border-light);
-    border-radius: 18px;
-    padding: 1.25rem 1.25rem;
-    box-shadow: 0 12px 28px rgba(180, 95, 77, 0.10);
-    margin-bottom: 1.25rem;
-}
-
-.section-card__header h3 {
-    color: var(--color-text-primary);
-    font-weight: 400;
-    margin-bottom: 0.5rem;
-}
-
-.section-card__header p {
-    color: var(--color-text-secondary);
-    font-size: 0.97rem;
-    margin: 0;
-}
-
-.text-label {
-    display: block;
-    margin: 1.5rem 0 0.4rem 0;
-    font-weight: 500;
-    color: var(--color-text-primary);
-}
-
-.section-spacer {
-    height: 2rem;
-}
-
-.results-card {
-    background: var(--color-background-alt);
-    border: 1px solid var(--color-border-light);
-    border-radius: 18px;
-    padding: 1.25rem 1.5rem;
-    box-shadow: 0 12px 28px rgba(180, 95, 77, 0.10);
-    margin: 1rem 0 1.5rem 0;
-}
-.results-card div[data-testid="stDataFrame"] {
-    padding-top: 0.5rem;
-}
-</style>
-""",
-    unsafe_allow_html=True,
-)
+# Load optimized CSS styling
+load_css()
 
 # Load configuration from environment variables
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
@@ -517,7 +249,7 @@ def main():
                     # Update provider if changed
                     if selected_provider != current_provider:
                         ai_service.set_active_provider(selected_provider)
-                        st.rerun()
+                        # No rerun needed - selectbox change triggers auto-rerun
 
             # Show provider details in professional expander
             with st.expander("🔧 AI Provider Details", expanded=False):
@@ -682,6 +414,7 @@ def main():
                 <h3>Ask Questions About Your Loan Data</h3>
                 <p>Use natural language to query your loan portfolio data.</p>
             </div>
+        </div>
         """,
             unsafe_allow_html=True,
         )
@@ -702,17 +435,21 @@ def main():
             if st.button("🎯 Use", disabled=not selected_question, use_container_width=True):
                 if selected_question in analyst_questions:
                     st.session_state.user_question = analyst_questions[selected_question]
-                    st.rerun()
+                    # No rerun needed - Streamlit will auto-update the text_area
 
         # Professional question input with better styling
+        # Initialize user_question in session state
+        if "user_question" not in st.session_state:
+            st.session_state["user_question"] = ""
+
         st.markdown("<label class='text-label'>💭 Your Question:</label>", unsafe_allow_html=True)
         user_question = st.text_area(
             "Your Question",
-            value=st.session_state.get("user_question", ""),
             placeholder="e.g., What are the top 10 states by loan volume and their average interest rates?",
             help="Ask your question in natural language - be specific for better results",
             height=100,
             label_visibility="collapsed",
+            key="user_question",
         )
 
         # AI Generation - Always show button, disable if conditions not met
@@ -776,25 +513,29 @@ def main():
             unsafe_allow_html=True,
         )
 
-        # Show generated SQL in a compact expander to avoid pre-results blank space
+        # Show generated SQL with inline edit button
+        has_sql = bool(st.session_state.generated_sql.strip()) if st.session_state.generated_sql else False
         if st.session_state.generated_sql:
-            with st.expander("🧠 AI-Generated SQL", expanded=False):
-                st.code(st.session_state.generated_sql, language="sql")
+            # Header with edit button inline
+            col_header, col_edit = st.columns([10, 1])
+            with col_header:
+                st.markdown("**🧠 AI-Generated SQL**")
+            with col_edit:
+                if st.button("✏️", key="edit_sql_inline", disabled=not has_sql, help="Edit SQL"):
+                    st.session_state.show_edit_sql = True
+                    # No rerun needed - editor will appear on next natural render
 
-        # Action buttons with consistent styling
-        st.markdown("<div class='query-actions'>", unsafe_allow_html=True)
-        col1, col2 = st.columns([3, 1])
+            st.code(st.session_state.generated_sql, language="sql")
 
-        with col1:
-            has_sql = bool(st.session_state.generated_sql.strip()) if st.session_state.generated_sql else False
+        # Execute button - full width
+        if has_sql:
             execute_button = st.button(
                 "✅ Execute Query",
                 type="primary",
                 use_container_width=True,
-                disabled=not has_sql,
-                help="Generate SQL first to execute" if not has_sql else None,
+                key="execute_ai_query",
             )
-            if execute_button and has_sql:
+            if execute_button:
                 with st.spinner("⚡ Running query..."):
                     try:
                         start_time = time.time()
@@ -813,57 +554,58 @@ def main():
                         st.error(f"❌ Query execution failed: {str(e)}")
                         st.info("💡 Try editing the SQL or rephrasing your question")
 
-        with col2:
-            edit_button = st.button(
-                "✏️ Edit",
-                use_container_width=True,
-                disabled=not has_sql,
-                help="Generate SQL first to edit" if not has_sql else None,
-            )
-            if edit_button and has_sql:
-                st.session_state.show_edit_sql = True
-
         # (Edit panel moved to render AFTER results to avoid pre-results blank space)
 
-        # If user requested editing, render panel after results so the layout stays compact
+        # If user requested editing, show modal-style editor in place
         if st.session_state.get("show_edit_sql", False):
-            st.markdown("### ✏️ Edit SQL Query")
+            st.markdown("---")
+
+            # Header with close button
+            header_col, close_col = st.columns([10, 1])
+            with header_col:
+                st.markdown("**✏️ Edit SQL Query**")
+            with close_col:
+                if st.button("✖️", key="close_edit", help="Close editor"):
+                    st.session_state.show_edit_sql = False
+                    # No rerun needed - button click triggers auto-rerun
+
             edited_sql = st.text_area(
-                "Modify the query:",
+                "SQL Query",
                 value=st.session_state.generated_sql,
-                height=150,
+                height=200,
                 key="edit_sql",
+                label_visibility="collapsed",
             )
 
-            run_col, cancel_col = st.columns([3, 1])
-            with run_col:
-                if st.button("🚀 Run Edited Query", type="primary", use_container_width=True):
-                    with st.spinner("⚡ Running edited query..."):
-                        try:
-                            start_time = time.time()
-                            result_df = execute_sql_query(
-                                edited_sql,
-                                st.session_state.get("parquet_files", []),
-                            )
-                            execution_time = time.time() - start_time
-                            # Collapse editor on success and show results
-                            st.session_state.show_edit_sql = False
-                            display_results(result_df, "Edited Query Results", execution_time)
-                        except Exception as e:
-                            st.error(f"❌ Query execution failed: {str(e)}")
-                            st.info("💡 Check your SQL syntax and try again")
-            with cancel_col:
-                if st.button("❌ Cancel", use_container_width=True):
-                    st.session_state.show_edit_sql = False
-                    st.rerun()
+            # Only Run button, full width
+            if st.button("🚀 Run Edited Query", type="primary", use_container_width=True, key="run_edited"):
+                with st.spinner("⚡ Running edited query..."):
+                    try:
+                        start_time = time.time()
+                        result_df = execute_sql_query(
+                            edited_sql,
+                            st.session_state.get("parquet_files", []),
+                        )
+                        execution_time = time.time() - start_time
+                        # Update session state and collapse editor
+                        st.session_state.generated_sql = edited_sql
+                        st.session_state.show_edit_sql = False
+                        st.session_state["ai_query_result_df"] = result_df
+                        st.session_state["last_result_tab"] = "tab1"
+                        display_results(result_df, "Edited Query Results", execution_time)
+                    except Exception as e:
+                        st.error(f"❌ Query execution failed: {str(e)}")
+                        st.info("💡 Check your SQL syntax and try again")
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("---")
 
         # Persisted results rendering for AI tab: show last results across reruns
+        # FIXED: Only show if we have actual data AND didn't render in this run
         if (
             st.session_state.get("last_result_tab") == "tab1"
             and isinstance(st.session_state.get("last_result_df"), pd.DataFrame)
             and not st.session_state.get("_rendered_this_run", False)
+            and not st.session_state["last_result_df"].empty
         ):
             display_results(
                 st.session_state["last_result_df"],
@@ -918,10 +660,16 @@ def main():
         # Domain Explorer (old format)
         st.markdown("### 🏗️ Ontological Domains")
         domain_names = list(LOAN_ONTOLOGY.keys())
+
+        # Initialize session state to prevent navigation on first interaction
+        if "ontology_domain_selector" not in st.session_state:
+            st.session_state["ontology_domain_selector"] = domain_names[0] if domain_names else None
+
         selected_domain = st.selectbox(
             "Choose a domain to explore:",
             options=domain_names,
             format_func=lambda x: f"{x.replace('_', ' ').title()} ({len(LOAN_ONTOLOGY[x]['fields'])} fields)",
+            key="ontology_domain_selector",
         )
 
         if selected_domain:
@@ -1041,22 +789,30 @@ def main():
             "High LTV Analysis": "SELECT STATE, COUNT(*) as high_ltv_loans, ROUND(AVG(CSCORE_B), 0) as avg_credit_score FROM data WHERE OLTV > 90 AND STATE IS NOT NULL GROUP BY STATE HAVING COUNT(*) > 100 ORDER BY high_ltv_loans DESC",
         }
 
-        # Sync selection -> textarea using session state to persist on reruns
-        def _update_manual_sql():
-            sel = st.session_state.get("manual_sample_query", "")
-            st.session_state["manual_sql_text"] = sample_queries.get(sel, "")
+        # Initialize session state if not exists (prevents navigation on first interaction)
+        if "manual_sql_text" not in st.session_state:
+            st.session_state["manual_sql_text"] = ""
+        if "manual_sample_query_selector" not in st.session_state:
+            st.session_state["manual_sample_query_selector"] = ""
 
-        selected_sample = st.selectbox(
-            "📋 Choose a sample query:",
-            list(sample_queries.keys()),
-            key="manual_sample_query",
-            on_change=_update_manual_sql,
-        )
+        # Sample query selector with Use button
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            selected_sample = st.selectbox(
+                "📋 Choose a sample query:",
+                [""] + list(sample_queries.keys())[1:],  # Skip the empty key
+                key="manual_sample_query_selector",
+            )
+        with col2:
+            st.write("")  # Spacing
+            if st.button("🎯 Use", disabled=not selected_sample, use_container_width=True, key="use_manual_sample"):
+                if selected_sample in sample_queries:
+                    st.session_state["manual_sql_text"] = sample_queries[selected_sample]
 
         # Keep a compact, consistent editor area to avoid large empty gaps
+        # Note: When using key, don't set value - session state controls it
         manual_sql = st.text_area(
             "Write your SQL query:",
-            value=st.session_state.get("manual_sql_text", sample_queries[selected_sample]),
             height=140,
             placeholder="SELECT * FROM data LIMIT 10",
             help="Use 'data' as the table name",

@@ -98,15 +98,28 @@ def _init_chart_state(df: pd.DataFrame, container_key: str):
             x_axis = numeric_cols[0] if numeric_cols else cols[0]
         y_axis = None  # Always None for Histogram
 
-    # Initialize session state (only if not already set)
-    if keys["chart"] not in st.session_state:
+    # Check if columns have changed - if so, reset chart state
+    last_cols_key = f"{container_key}_last_cols"
+    current_cols_str = ",".join(sorted(cols))
+    last_cols_str = st.session_state.get(last_cols_key, "")
+
+    # If columns changed, clear old state to get fresh smart defaults
+    if current_cols_str != last_cols_str:
         st.session_state[keys["chart"]] = chart_type
-    if keys["x"] not in st.session_state:
         st.session_state[keys["x"]] = x_axis
-    if keys["y"] not in st.session_state:
         st.session_state[keys["y"]] = y_axis
-    if keys["color"] not in st.session_state:
         st.session_state[keys["color"]] = ai_color
+        st.session_state[last_cols_key] = current_cols_str
+    else:
+        # Initialize session state (only if not already set)
+        if keys["chart"] not in st.session_state:
+            st.session_state[keys["chart"]] = chart_type
+        if keys["x"] not in st.session_state:
+            st.session_state[keys["x"]] = x_axis
+        if keys["y"] not in st.session_state:
+            st.session_state[keys["y"]] = y_axis
+        if keys["color"] not in st.session_state:
+            st.session_state[keys["color"]] = ai_color
 
     return keys, cols
 
@@ -228,20 +241,29 @@ def _get_column_types(df: pd.DataFrame) -> tuple[list[str], list[str], list[str]
 def get_chart_recommendation(df: pd.DataFrame) -> tuple[str | None, str | None, str | None]:
     """
     Recommend a chart type and axes based on the DataFrame schema.
+    Prioritizes numeric columns for Y-axis for better visualizations.
     Uses cached column type checks for performance.
     """
     # Get cached column types
     numeric_cols, datetime_cols, categorical_cols = _get_column_types(df)
 
     # Order recommendations by specificity and common use cases
-    if len(numeric_cols) == 1 and len(datetime_cols) == 1:
-        return "Line", datetime_cols[0], numeric_cols[0]  # Time series first
-    elif len(categorical_cols) == 1 and len(numeric_cols) >= 1:
-        return "Bar", categorical_cols[0], numeric_cols[0]  # Bar charts for categories
-    elif len(numeric_cols) == 2:
-        return "Scatter", numeric_cols[0], numeric_cols[1]  # Scatter for numeric pairs
+    # Always try to use numeric columns for Y-axis (aggregations, measurements)
+    if len(numeric_cols) >= 1 and len(datetime_cols) >= 1:
+        # Time series: date on X, numeric on Y
+        return "Line", datetime_cols[0], numeric_cols[0]
+    elif len(categorical_cols) >= 1 and len(numeric_cols) >= 1:
+        # Categorical analysis: category on X, numeric on Y
+        return "Bar", categorical_cols[0], numeric_cols[0]
+    elif len(numeric_cols) >= 2:
+        # Multiple numerics: scatter plot for correlation
+        return "Scatter", numeric_cols[0], numeric_cols[1]
+    elif len(numeric_cols) == 1:
+        # Single numeric: histogram for distribution
+        return "Histogram", numeric_cols[0], None
     elif len(numeric_cols) > 2 and not categorical_cols:
-        return "Heatmap", numeric_cols[0], numeric_cols[1]  # Heatmap for multiple numerics
+        # Many numerics, no categories: heatmap
+        return "Heatmap", numeric_cols[0], numeric_cols[1]
 
     return None, None, None
 
@@ -379,12 +401,11 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         st.selectbox(
             "Chart type",
             ALLOWED_CHART_TYPES,
-            index=_safe_index(ALLOWED_CHART_TYPES, chart_type),
             key=keys["chart"],
             help="Choose visualization type",
         )
     with ctrl_col2:
-        st.selectbox("X-axis", cols, index=_safe_index(cols, x_col), key=keys["x"], help="Select X-axis column")
+        st.selectbox("X-axis", cols, key=keys["x"], help="Select X-axis column")
     st.markdown("</div>", unsafe_allow_html=True)
 
     # Handle Y-axis and color in compact layout
@@ -403,7 +424,7 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
             )
     else:
         with y_color_cols[0]:
-            st.selectbox("Y-axis", cols, index=_safe_index(cols, y_col), key=keys["y"], help="Select Y-axis column")
+            st.selectbox("Y-axis", cols, key=keys["y"], help="Select Y-axis column")
     st.markdown("</div>", unsafe_allow_html=True)
 
     # Color selector with None option
@@ -412,7 +433,6 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         st.selectbox(
             "Color / Group by",
             color_options,
-            index=_safe_index(color_options, color_col),
             key=keys["color"],
             help="Optional grouping column",
             format_func=lambda x: "— None —" if x is None else str(x),
@@ -426,7 +446,6 @@ def render_visualization(df: pd.DataFrame, container_key: str = "viz"):
         st.selectbox(
             "Sort by",
             sort_by_options,
-            index=_safe_index(sort_by_options, sort_col),
             key=sort_col_key,
             help="Sort data before plotting",
             format_func=lambda x: "— None —" if x is None else str(x),
